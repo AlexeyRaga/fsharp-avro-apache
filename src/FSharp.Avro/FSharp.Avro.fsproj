@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Library.fs" />
+        <Compile Include="Context.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Apache.Avro" Version="1.11.1" />
+      <PackageReference Update="FSharp.Core" Version="6.0.6" />
+    </ItemGroup>
+
+</Project>

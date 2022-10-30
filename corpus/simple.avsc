@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "namespace": "Test.AvroMsg",
+  "name": "TestMessage",
+  "fields": [
+    { "name": "num",  "type": ["null", "int"] },
+    { "name": "str", "type": "string" },
+    { "name": "choice", "type": ["string", "int", "boolean"] },
+    { "name": "optional_choice", "type": ["null", "string", "int", "boolean"] },
+    {
+      "name": "md5",
+      "type": {"type": "fixed", "size": 16, "name": "MD5"}
+    },
+    {
+      "name": "suit",
+      "type": {
+        "type": "enum", "name": "Suit", "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
+      }
+    }
+  ]
+}
