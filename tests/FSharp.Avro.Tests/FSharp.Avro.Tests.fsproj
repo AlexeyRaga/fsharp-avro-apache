@@ -14,7 +14,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="FsToolkit.ErrorHandling" Version="3.1.0" />
+        <PackageReference Include="Fantomas.FCS" Version="5.0.6" />
+        <PackageReference Include="FsToolkit.ErrorHandling" Version="3.2.0" />
         <PackageReference Include="Hedgehog" Version="0.13.0" />
         <PackageReference Include="Hedgehog.Experimental" Version="0.7.0" />
         <PackageReference Include="Hedgehog.Xunit" Version="0.5.1" />

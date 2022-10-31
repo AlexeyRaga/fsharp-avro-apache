@@ -3,10 +3,12 @@
   "namespace": "Test.AvroMsg",
   "name": "TestMessage",
   "fields": [
+    { "name": "id", "type": { "type": "string", "logicalType": "uuid" } },
     { "name": "num",  "type": ["null", "int"] },
     { "name": "str", "type": "string" },
     { "name": "choice", "type": ["string", "int", "boolean"] },
     { "name": "optional_choice", "type": ["null", "string", "int", "boolean"] },
+    { "name": "map", "type": { "type": "map", "values": "boolean" } },
     {
       "name": "md5",
       "type": {"type": "fixed", "size": 16, "name": "MD5"}
