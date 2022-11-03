@@ -22,7 +22,7 @@ type Person(name : string, age : int) =
 [<CLIMutable>]
 type Foo =
     { Name : string
-      Age : int }
+      Age : float32 }
 
 [<Fact>]
 let ``My test`` () =

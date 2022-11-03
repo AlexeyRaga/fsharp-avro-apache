@@ -4,12 +4,11 @@ open System.IO
 open Avro
 open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Xml
-open Myriad.Core
-open Myriad.Core.Ast
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open AstExtensions
 
+open Fantomas.Core
 open Schema
 
 
@@ -19,10 +18,7 @@ module rec A =
     let private fromAvroMethodIdent = Ident.Create "FromAvro"
 
     let private callFromAvro (schema : NamedSchema) (value : SynExpr) =
-        SynExpr.CreateInstanceMethodCall(
-            LongIdentWithDots.CreateString $"{schema.Fullname}.{fromAvroMethodIdent.idText}",
-            SynExpr.EnsureParen value
-        )
+        SynExpr.CreateInstanceMethodCall(SynLongIdent.Create $"{schema.Fullname}.{fromAvroMethodIdent.idText}", SynExpr.EnsureParen value)
 
     let mkFromAvro (typ : SynType) (f : Ident -> SynExpr) =
         let ident = Ident.Create "value"
@@ -31,7 +27,7 @@ module rec A =
         SynMemberDefn.StaticMember(fromAvroMethodIdent, f ident, [ typedVal ])
 
     let private schemaMember (schema : Schema) =
-        SynMemberDefn.StaticMember(Ident.Create "SCHEMA", SynExpr.CreateConstString(schema.ToString()))
+        SynMemberDefn.StaticMember(Ident.Create "SCHEMA", SynExpr.CreateConst(SynConst.CreateString(schema.ToString())))
 
     let getSchemasToGenerate (schema : Schema) =
         let schemas = ResizeArray<Schema>()
@@ -53,14 +49,14 @@ module rec A =
 
     let rec primSchemaType (schema : PrimitiveSchema) =
         match schema.Tag with
-        | Schema.Type.Boolean -> SynType.Bool()
-        | Schema.Type.Int -> SynType.Int()
-        | Schema.Type.Long -> SynType.Int64()
-        | Schema.Type.String -> SynType.String()
-        | Schema.Type.Float -> SynType.Float()
-        | Schema.Type.Double -> SynType.Double()
-        | Schema.Type.Null -> SynType.Unit()
-        | Schema.Type.Bytes -> SynType.Array(1, SynType.Byte(), range0)
+        | Schema.Type.Boolean -> SynType.Bool
+        | Schema.Type.Int -> SynType.Int
+        | Schema.Type.Long -> SynType.Int64
+        | Schema.Type.String -> SynType.String
+        | Schema.Type.Float -> SynType.Float
+        | Schema.Type.Double -> SynType.Double
+        | Schema.Type.Null -> SynType.Unit
+        | Schema.Type.Bytes -> SynType.CreateArray SynType.Byte
         | _ -> failwith "Unexpected primitive type"
 
     and unionSchemaType (schema : UnionSchema) =
@@ -68,7 +64,7 @@ module rec A =
             xs |> List.map (snd >> schemaType) |> SynType.Choice
 
         match schema with
-        | UnionEmpty -> SynType.Unit()
+        | UnionEmpty -> SynType.Unit
         | UnionSingleOptional (_, x) -> SynType.Option(schemaType x, true)
         | UnionOptionalCases xs -> SynType.Option(buildChoice xs, true)
         | UnionCases xs -> buildChoice xs
@@ -79,7 +75,7 @@ module rec A =
         | :? PrimitiveSchema as s -> primSchemaType s
         | :? NamedSchema as s -> SynType.Create(s.Fullname)
         | :? ArraySchema as s -> SynType.Array(1, schemaType s.ItemSchema, range0)
-        | :? MapSchema as s -> SynType.CreateMap(SynType.String(), schemaType s.ValueSchema)
+        | :? MapSchema as s -> SynType.Map(SynType.String, schemaType s.ValueSchema)
         | :? UnionSchema as s -> unionSchemaType s
         | :? LogicalSchema as s -> SynType.Create(s.LogicalType.GetCSharpType(false).FullName)
         | _ -> failwith $"Unexpected schema: {schema.Fullname} of type {schema.GetType().FullName}"
@@ -88,11 +84,11 @@ module rec A =
         match schema with
         | :? PrimitiveSchema as s -> SynExpr.Downcast(expr, typ, range0)
 
-        | :? FixedSchema as s -> SynExpr.CreateDowncast(expr, SynType.CreateArray(SynType.Byte())) |> callFromAvro s
+        | :? FixedSchema as s -> SynExpr.CreateDowncast(expr, SynType.CreateArray(SynType.Byte)) |> callFromAvro s
 
         // | :? ArraySchema as s ->
 
-        | :? EnumSchema as s -> SynExpr.CreateDowncast(expr, SynType.Int()) |> callFromAvro s
+        | :? EnumSchema as s -> SynExpr.CreateDowncast(expr, SynType.Int) |> callFromAvro s
 
         | :? UnionSchema as u ->
             match u with
@@ -116,8 +112,8 @@ module rec A =
         let mem =
             mkFromAvro genericAvroTyp (fun valueIdent ->
                 let getValueMethod =
-                    LongIdentWithDots.CreateFromLongIdent [ valueIdent
-                                                            Ident.Create "GetValue" ]
+                    SynLongIdent.Create [ valueIdent
+                                          Ident.Create "GetValue" ]
 
                 let getValue ix =
                     SynExpr.CreateInstanceMethodCall(getValueMethod, SynExpr.CreateConst(SynConst.Int32 ix))
@@ -131,11 +127,11 @@ module rec A =
                             false,
                             false,
                             SynPat.CreateNamed($"_{fid.idText}"),
-                            Some range0,
                             genGetValue fld.Schema typ (getValue ix),
                             [],
                             st,
-                            range0
+                            range0,
+                            SynExprLetOrUseBangTrivia.Zero
                         ))
 
                 let ys = xs ret
@@ -147,7 +143,7 @@ module rec A =
                 SynAttributes.Empty,
                 false,
                 Ident.Create "Test",
-                Some(SynType.Int()),
+                Some(SynType.Int),
                 SynMemberKind.PropertyGet,
                 (fun kind -> { SynMemberFlags.InstanceMember with Trivia = { SynMemberFlagsTrivia.Zero with MemberRange = Some range0 } }),
                 PreXmlDoc.Empty,
@@ -173,7 +169,7 @@ module rec A =
     let genEnum (schema : EnumSchema) =
         // Generate FromAvro
         let fromAvro =
-            mkFromAvro (SynType.Int()) (fun value ->
+            mkFromAvro (SynType.Int) (fun value ->
                 let cases =
                     schema.Symbols
                     |> Seq.indexed
@@ -181,7 +177,7 @@ module rec A =
                         SynMatchClause.Create(
                             SynPat.CreateConst(SynConst.Int32 ix),
                             None,
-                            SynExpr.CreateLongIdent(LongIdentWithDots.CreateString $"{schema.Fullname}.{case}")
+                            SynExpr.CreateLongIdent(SynLongIdent.Create $"{schema.Fullname}.{case}")
                         ))
 
                 let cases = Seq.append cases [ SynMatchClause.CreateOtherwiseFailwith($"Invalid value for enum {schema.Fullname}") ]
@@ -210,7 +206,7 @@ module rec A =
         let valuePat = SynPat.CreateLongIdent("value", [])
 
         // Generate smart constructor
-        let arrayLen = SynExpr.CreateInstanceMethodCall(LongIdentWithDots.CreateString "Array.length", valueExpr)
+        let arrayLen = SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Array.length", valueExpr)
         let okClause = SynMatchClause.Create(SynPat.CreateConst(SynConst.Int32 schema.Size), None, SynExpr.CreateOk valueExpr)
 
         let errClause =
@@ -220,13 +216,13 @@ module rec A =
         let ctor = SynMemberDefn.StaticMember(Ident.Create "Create", ctorBody, [ SynPat.CreateNamed(Ident.Create "value") ])
 
         // create FromAvro
-        let fromAvro = mkFromAvro (SynType.CreateArray(SynType.Byte())) (fun value -> SynExpr.CreateApp(typeName, value))
+        let fromAvro = mkFromAvro (SynType.CreateArray(SynType.Byte)) (fun value -> SynExpr.CreateApp(typeName, value))
 
         // Generate union type
-        let case = SynUnionCase.Create(Ident.Create schema.Name, [ SynField.CreateArray(SynType.Byte()) ])
+        let case = SynUnionCase.Create(Ident.Create schema.Name, [ SynField.CreateArray(SynType.Byte) ])
 
         let fixedType =
-            SynTypeDefn.CreateUnion(typeName, [ case ], [ schemaMember schema; ctor; fromAvro ], access = SynAccess.Private)
+            SynTypeDefn.CreateUnion(typeName, [ case ], [ schemaMember schema; ctor; fromAvro ], access = SynAccess.Private(range0))
 
         let decl = SynModuleDecl.Types([ fixedType ], range0)
 
@@ -258,12 +254,24 @@ module rec A =
         | :? FixedSchema as s -> genFixed s
 
 
+module AvroGenerator =
+    let GenerateAsync filename =
+        let schema = File.ReadAllText filename |> Schema.Parse
+        let ast = A.getSchemasToGenerate schema |> Seq.map A.genType |> List.ofSeq
 
-type AvroGenerator() =
-    interface IMyriadGenerator with
-        member this.ValidInputExtensions = seq { ".avsc" }
+        let input =
+            ParsedInput.ImplFile(
+                ParsedImplFileInput(
+                    $"{filename}.fs",
+                    false,
+                    QualifiedNameOfFile(Ident.Create ""),
+                    [],
+                    [],
+                    ast,
+                    (false, false),
+                    { ConditionalDirectives = []
+                      CodeComments = [] }
+                )
+            )
 
-        member this.Generate(context : GeneratorContext) : Output =
-            let schema = context.InputFilename |> File.ReadAllText |> Schema.Parse
-
-            A.getSchemasToGenerate schema |> Seq.map A.genType |> List.ofSeq |> Output.Ast
+        CodeFormatter.FormatASTAsync(input)
