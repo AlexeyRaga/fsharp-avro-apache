@@ -7,7 +7,22 @@
 
     <ItemGroup>
         <Compile Include="Ast\TriviaExtensions.fs" />
-        <Compile Include="Ast\AstExtensions.fs" />
+        <Compile Include="Ast\SynConst.fs" />
+        <Compile Include="Ast\Ident.fs" />
+        <Compile Include="Ast\SynLongIdent.fs" />
+        <Compile Include="Ast\SynModuleOrNamespace.fs" />
+        <Compile Include="Ast\SynComponentInfo.fs" />
+        <Compile Include="Ast\SynPat.fs" />
+        <Compile Include="Ast\SynTypeDefn.fs" />
+        <Compile Include="Ast\SynField.fs" />
+        <Compile Include="Ast\SynUnionCase.fs" />
+        <Compile Include="Ast\SynType.fs" />
+        <Compile Include="Ast\SynExpr.fs" />
+        <Compile Include="Ast\SynAttribute.fs" />
+        <Compile Include="Ast\SynBinding.fs" />
+        <Compile Include="Ast\SynMemberDefn.fs" />
+        <Compile Include="Ast\SynMatchClause.fs" />
+        <Compile Include="Ast\SynModuleDecl.fs" />
         <Compile Include="Schema.fs" />
         <Compile Include="AstExtensions.fs" />
         <Compile Include="Generator.fs" />

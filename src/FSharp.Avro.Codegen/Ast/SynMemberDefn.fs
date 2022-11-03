@@ -1,0 +1,112 @@
+[<Microsoft.FSharp.Core.AutoOpen>]
+module FSharp.Compiler.Syntax.SynMemberDefn
+
+open FSharp.Compiler.SyntaxTrivia
+open FSharp.Compiler.Text.Range
+open FSharp.Compiler.Xml
+
+type SynMemberFlags with
+    static member Create(kind : SynMemberKind, ?isStatic : bool, ?trivia) : SynMemberFlags =
+        { IsInstance = not (defaultArg isStatic false)
+          MemberKind = kind
+          IsDispatchSlot = false
+          IsOverrideOrExplicitImpl = false
+          IsFinal = false
+          GetterOrSetterIsCompilerGenerated = false
+          Trivia = defaultArg trivia SynMemberFlagsTrivia.Zero }
+
+    static member InstanceMember = SynMemberFlags.Create(SynMemberKind.Member, false, SynMemberFlagsTrivia.InstanceMember)
+    static member StaticMember = SynMemberFlags.Create(SynMemberKind.Member, true, SynMemberFlagsTrivia.StaticMember)
+
+type SynMemberDefn with
+    static member CreateGetSetProperty
+        (
+            thisIdent : Ident,
+            name : Ident,
+            fieldName : Ident,
+            ?getterAccess : SynAccess,
+            ?getterAttrs : SynAttributes,
+            ?setterAccess : SynAccess,
+            ?setterAttrs : SynAttributes
+        ) =
+
+        let getterFlags = SynMemberFlags.Create(SynMemberKind.PropertyGet, trivia = SynMemberFlagsTrivia.InstanceMember)
+        let setterFlags = SynMemberFlags.Create(SynMemberKind.PropertySet, trivia = SynMemberFlagsTrivia.InstanceMember)
+
+        let valueIdent = Ident.Create "value"
+
+        let getBinding =
+            SynBinding.Create(
+                getterFlags,
+                SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], [ SynPat.CreateUnit ], ?access = getterAccess),
+                SynExpr.CreateIdent fieldName,
+                ?attributes = getterAttrs
+            )
+
+        let setBinding =
+            SynBinding.Create(
+                setterFlags,
+                SynPat.CreateLongIdent(
+                    SynLongIdent.Create [ thisIdent; name ],
+                    [ SynPat.CreateParen(SynPat.CreateNamed valueIdent) ],
+                    ?access = setterAccess
+                ),
+                SynExpr.Set(SynExpr.CreateIdent fieldName, SynExpr.CreateIdent valueIdent, range0),
+                ?attributes = setterAttrs
+            )
+
+        SynMemberDefn.GetSetMember(Some getBinding, Some setBinding, range0, SynMemberGetSetTrivia.Zero)
+
+    static member CreateLetBinding(binding : SynBinding, ?isInline : bool, ?isRecursive : bool) =
+        SynMemberDefn.LetBindings([ binding ], defaultArg isInline false, defaultArg isRecursive false, range0)
+
+
+    static member Let(?access, ?isInline, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr) =
+        SynBinding.Let(
+            ?access = access,
+            ?isInline = isInline,
+            ?isMutable = isMutable,
+            ?attributes = attributes,
+            ?xmldoc = xmldoc,
+            ?valData = valData,
+            ?pattern = pattern,
+            ?returnInfo = returnInfo,
+            ?expr = expr
+        )
+        |> SynMemberDefn.CreateLetBinding
+
+
+    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list) =
+        let flags = SynMemberFlags.StaticMember
+        let valData = SynValData(Some flags, SynValInfo.Empty, None)
+
+        let memberArgs =
+            match args with
+            | Some xs -> [ SynPat.Tuple(false, xs, range0) |> SynPat.CreateParen ]
+            | None -> []
+
+        let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ name ], memberArgs)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body)
+
+        SynMemberDefn.Member(bnd, range0)
+
+    static member InstanceMember(thisIdent : Ident, name : Ident, body : SynExpr, ?args : SynPat list, ?isOverride : bool) =
+        let flags =
+            if defaultArg isOverride false then
+                { SynMemberFlags.InstanceMember with
+                    IsOverrideOrExplicitImpl = true
+                    Trivia = { SynMemberFlags.InstanceMember.Trivia with OverrideRange = Some range0 } }
+            else
+                SynMemberFlags.InstanceMember
+
+        let valData = SynValData(Some flags, SynValInfo.Empty, None)
+
+        let memberArgs =
+            match args with
+            | Some xs -> [ SynPat.Tuple(false, xs, range0) |> SynPat.CreateParen ]
+            | None -> []
+
+        let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], memberArgs)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body)
+
+        SynMemberDefn.Member(bnd, range0)

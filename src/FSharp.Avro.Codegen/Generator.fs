@@ -102,69 +102,50 @@ module rec A =
     let genRecord (schema : RecordSchema) =
         let mkFld (fld : Field) =
             let typ = schemaType fld.Schema
-            let fid = Ident.Create(fld.Name)
-            fld, fid, typ, SynField.Create(typ, name = fid)
+            let fid = Ident.Prefixed("__", Ident.Create(fld.Name))
+            let pid = Ident.Create(fld.Name)
+
+            {| field = fld
+               fieldId = fid
+               propId = pid
+               typ = typ
+               synFld = SynField.Create(typ, name = fid) |}
+
+
+        let typeName = Ident.Create schema.Name
+        let thisIdent = Ident.Create "this"
 
         let fields = schema.Fields |> Seq.map mkFld |> Seq.toList
 
-        let ret = SynExpr.YieldOrReturn((false, false), SynExpr.CreateOk(SynExpr.CreateUnit), range0)
+        let defaultCtor = SynMemberDefn.DefaultCtor (fields |> List.map (fun x -> (x.propId, x.typ)))
+        let unsafeCtor = SynMemberDefn.CreateUnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
 
-        let mem =
-            mkFromAvro genericAvroTyp (fun valueIdent ->
-                let getValueMethod =
-                    SynLongIdent.Create [ valueIdent
-                                          Ident.Create "GetValue" ]
+        let privateFields, props =
+            fields
+            |> List.map (fun x -> SynMemberDefn.CreatePropertyWithPrivateSetter(thisIdent, x.typ, x.fieldId, x.propId))
+            |> List.unzip
 
-                let getValue ix =
-                    SynExpr.CreateInstanceMethodCall(getValueMethod, SynExpr.CreateConst(SynConst.Int32 ix))
+        let specRec = SynMemberDefn.CreateAvroRecordInterface(thisIdent, typeName)
 
-                let xs =
-                    fields
-                    |> Seq.indexed
-                    |> Seq.foldBack (fun (ix, (fld, fid, typ, _)) st ->
-                        SynExpr.LetOrUseBang(
-                            DebugPointAtBinding.Yes(range0),
-                            false,
-                            false,
-                            SynPat.CreateNamed($"_{fid.idText}"),
-                            genGetValue fld.Schema typ (getValue ix),
-                            [],
-                            st,
-                            range0,
-                            SynExprLetOrUseBangTrivia.Zero
-                        ))
-
-                let ys = xs ret
-
-                SynExpr.CreateApp(SynExpr.CreateIdentString("result"), SynExpr.ComputationExpr(false, ys, range0)))
-
-        let prop =
-            SynMemberDefn.AutoProperty(
-                SynAttributes.Empty,
-                false,
-                Ident.Create "Test",
-                Some(SynType.Int),
-                SynMemberKind.PropertyGet,
-                (fun kind -> { SynMemberFlags.InstanceMember with Trivia = { SynMemberFlagsTrivia.Zero with MemberRange = Some range0 } }),
-                PreXmlDoc.Empty,
-                None,
-                range0,
-                SynExpr.CreateConst(SynConst.Unit),
-                None,
-                None,
-                range0
-            )
+        let equatable = SynMemberDefn.CreateIEquatable(thisIdent, SynType.Create typeName, fields |> List.map (fun x -> x.propId))
 
         let typ =
-            SynTypeDefn.CreateRecord(
-                Ident.Create(schema.Name),
-                fields |> Seq.map (fun (_, _, _, x) -> x),
-                members = [ prop; schemaMember schema; mem ]
+            SynTypeDefn.CreateClass(
+                typeName,
+                members =
+                    [ yield defaultCtor
+                      yield! privateFields
+                      yield unsafeCtor
+                      yield! props
+                      yield schemaMember schema
+                      yield specRec
+                      yield! equatable ],
+                attributes = [ SynAttributeList.Create(SynAttribute.Sealed) ]
             )
 
         let decl = SynModuleDecl.Types([ typ ], range0)
 
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ])
+        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
 
     let genEnum (schema : EnumSchema) =
         // Generate FromAvro
@@ -192,17 +173,17 @@ module rec A =
                 Ident.Create schema.Name,
                 cases,
                 [ schemaMember schema; fromAvro ],
-                attributes = [ SynAttributeList.Create(SynAttribute.RequireQualifiedAccess()) ]
+                attributes = [ SynAttributeList.Create(SynAttribute.RequireQualifiedAccess) ]
             )
 
         let decl = SynModuleDecl.CreateType(enumType)
 
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ])
+        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
 
     let genFixed (schema : FixedSchema) =
         let typeName = Ident.Create schema.Name
 
-        let valueExpr = SynExpr.CreateIdentString "value"
+        let valueExpr = SynExpr.CreateIdent "value"
         let valuePat = SynPat.CreateLongIdent("value", [])
 
         // Generate smart constructor
@@ -231,7 +212,7 @@ module rec A =
 
         let activePattern =
             SynModuleDecl.CreateLet [ SynBinding.Let(
-                                          pattern = SynPat.CreateLongIdent($"|{typeName.idText}|", [ valueMatch ]),
+                                          pattern = SynPat.CreateLongIdent($"(|{typeName.idText}|)", [ valueMatch ]),
                                           expr = valueExpr
                                       ) ]
 

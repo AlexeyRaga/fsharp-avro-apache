@@ -6,7 +6,6 @@ public class UnitTest1
     public void Test1()
     {
         var foo = new global::Tests.Foo();
-        foo.Age = 12;
-        foo.Name = "foo";
+        Test.AvroMsg.MD5.FromAvro(null);
     }
 }
