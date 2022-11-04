@@ -76,7 +76,7 @@ type SynMemberDefn with
         |> SynMemberDefn.CreateLetBinding
 
 
-    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list) =
+    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list, ?attributes: SynAttributeList list) =
         let flags = SynMemberFlags.StaticMember
         let valData = SynValData(Some flags, SynValInfo.Empty, None)
 
@@ -86,11 +86,11 @@ type SynMemberDefn with
             | None -> []
 
         let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ name ], memberArgs)
-        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
 
         SynMemberDefn.Member(bnd, range0)
 
-    static member InstanceMember(thisIdent : Ident, name : Ident, body : SynExpr, ?args : SynPat list, ?isOverride : bool) =
+    static member InstanceMember(thisIdent : Ident, name : Ident, body : SynExpr, ?args : SynPat list, ?isOverride : bool, ?attributes: SynAttributeList list) =
         let flags =
             if defaultArg isOverride false then
                 { SynMemberFlags.InstanceMember with
@@ -107,6 +107,6 @@ type SynMemberDefn with
             | None -> []
 
         let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], memberArgs)
-        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
 
         SynMemberDefn.Member(bnd, range0)

@@ -1,7 +1,10 @@
 module FSharp.Avro.Codegen.Schema
 
 open Avro
+open FSharp.Compiler.Syntax
 
+let schemaMember (schema : Schema) =
+    SynMemberDefn.StaticMember(Ident.Create "SCHEMA", SynExpr.CreateConst(SynConst.CreateString(schema.ToString())))
 let nullSchema = PrimitiveSchema.Create(Schema.Type.Null) :> Schema
 
 let (|UnionSingleOptional|UnionCases|UnionOptionalCases|UnionSingle|UnionEmpty|) (schema : UnionSchema) =

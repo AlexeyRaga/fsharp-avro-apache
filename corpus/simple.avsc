@@ -4,7 +4,8 @@
   "name": "TestMessage",
   "fields": [
     { "name": "id", "type": { "type": "string", "logicalType": "uuid" } },
-    { "name": "num",  "type": ["null", "int"] },
+    { "name": "num",  "type": "int" },
+    { "name": "optional_num",  "type": ["null", "int"] },
     { "name": "str", "type": "string" },
     { "name": "choice", "type": ["string", "int", "boolean"] },
     { "name": "optional_choice", "type": ["null", "string", "int", "boolean"] },

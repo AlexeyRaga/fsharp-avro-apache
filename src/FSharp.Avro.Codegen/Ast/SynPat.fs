@@ -46,9 +46,13 @@ type SynPat with
 
     static member CreateParen(exp) = SynPat.Paren(exp, range0)
     static member CreateTuple(pats : SynPat list) = SynPat.Tuple(false, pats, range0)
-    static member CreateParenTuple(pats : SynPat list) = SynPat.CreateParen (SynPat.CreateTuple pats)
+    static member CreateTupleParen(pats : SynPat list) = SynPat.CreateParen (SynPat.CreateTuple pats)
 
     static member CreateWild = SynPat.Wild(range0)
     static member CreateNull = SynPat.Null(range0)
     static member CreateUnit = SynPat.Const(SynConst.Unit, range0)
     static member CreateConst(expr) = SynPat.Const(expr, range0)
+
+    static member CreateIsInst(typ : SynType) = SynPat.IsInst(typ, range0)
+    static member CreateAs(lhs : SynPat, rhs : SynPat) = SynPat.As(lhs, rhs, range0)
+

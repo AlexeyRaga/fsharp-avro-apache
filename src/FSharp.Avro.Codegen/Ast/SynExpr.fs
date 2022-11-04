@@ -19,11 +19,14 @@ type SynExpr with
     static member CreateIdent ident = SynExpr.Ident(ident)
     static member CreateIdent ident = SynExpr.Ident(Ident.Create ident)
 
-    static member CreateLongIdent(ident, ?altNameRefCell, ?isOptional) =
-        SynExpr.LongIdent(defaultArg isOptional false, ident, defaultArg altNameRefCell None, range0)
+    static member CreateLongIdent(ident, ?isOptional) =
+        SynExpr.LongIdent(defaultArg isOptional false, ident, None, range0)
 
-    static member CreateLongIdent(ident : string, ?altNameRefCell, ?isOptional) =
-        SynExpr.LongIdent(defaultArg isOptional false, SynLongIdent.Create ident, defaultArg altNameRefCell None, range0)
+    static member CreateLongIdent(ident : string, ?isOptional) =
+        SynExpr.CreateLongIdent(SynLongIdent.Create ident, ?isOptional = isOptional)
+
+    static member CreateLongIdent(ident : LongIdent, ?isOptional) =
+        SynExpr.CreateLongIdent(SynLongIdent.Create ident, ?isOptional = isOptional)
 
     static member CreateTuple list = SynExpr.Tuple(false, list, [], range0)
     static member CreateUnit = SynExpr.CreateConst SynConst.Unit
@@ -77,6 +80,9 @@ type SynExpr with
             SynExpr.CreateIdent "Error",
             SynExpr.CreateConst(SynConst.String(value, SynStringKind.Regular, range0))
         )
+
+    static member CreateFailwith(err : string) =
+        SynExpr.CreateApp(SynExpr.CreateIdent "failwith", SynExpr.CreateConst(SynConst.CreateString err))
 
     static member CreatePipeRightOp = SynExpr.CreateIdent(Ident.Create "op_PipeRight")
 

@@ -5,23 +5,14 @@ open Avro.Generic
 open Avro.Specific
 open FSharp.Compiler.Syntax
 open Fantomas.Core
+open Test.AvroMsg
 open Xunit
 open FsToolkit.ErrorHandling
 
-
-type  Foo() =
-    // A read-write property.
-    let mutable myInternalValue = ""
-    let mutable  foo = 5
-    member this.MyReadWriteProperty
-        with get () = myInternalValue
-        and set (value) = myInternalValue <- value
-
 let code = """
 
-type Foo =
-    {a : int}
-    interface IEquatable<Foo> with
+type Foo() =
+    do base.Value <- 7
 
 """
 
@@ -30,6 +21,10 @@ type Foo =
 [<Fact>]
 let ``My test`` () =
    let input, _ = CodeFormatter.ParseAsync(false, code) |> Async.RunSynchronously |> Array.head
+
+   // let (Ok md5) = MD5.Create([||])
+   // let a = TestMessage(Guid.Empty, 2, Some 1, "foo", Choice1Of3 "bar", None, Map.empty, md5, Suit.CLUBS)
+
 
    match input with
     ParsedInput.ImplFile file ->

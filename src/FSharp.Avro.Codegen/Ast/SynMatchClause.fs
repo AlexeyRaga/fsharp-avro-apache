@@ -5,7 +5,7 @@ open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Text.Range
 
 type SynMatchClause with
-    static member Create(pattern, whenExp, result) =
+    static member Create(pattern : SynPat, whenExp, result) =
         let trivia =
             { SynMatchClauseTrivia.ArrowRange = Some range0
               BarRange = Some range0 }

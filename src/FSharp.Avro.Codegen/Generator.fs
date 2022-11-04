@@ -3,14 +3,12 @@ namespace FSharp.Avro.Codegen
 open System.IO
 open Avro
 open FSharp.Compiler.SyntaxTrivia
-open FSharp.Compiler.Xml
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open AstExtensions
-
 open Fantomas.Core
 open Schema
-
+open FSharp.Avro.Codegen.Generators
 
 module rec A =
 
@@ -21,13 +19,9 @@ module rec A =
         SynExpr.CreateInstanceMethodCall(SynLongIdent.Create $"{schema.Fullname}.{fromAvroMethodIdent.idText}", SynExpr.EnsureParen value)
 
     let mkFromAvro (typ : SynType) (f : Ident -> SynExpr) =
-        let ident = Ident.Create "value"
-        let valuePat = SynPat.CreateLongIdent(ident, [])
+        let valuePat = SynPat.CreateLongIdent(valueIdent, [])
         let typedVal = SynPat.CreateTyped(valuePat, typ)
-        SynMemberDefn.StaticMember(fromAvroMethodIdent, f ident, [ typedVal ])
-
-    let private schemaMember (schema : Schema) =
-        SynMemberDefn.StaticMember(Ident.Create "SCHEMA", SynExpr.CreateConst(SynConst.CreateString(schema.ToString())))
+        SynMemberDefn.StaticMember(fromAvroMethodIdent, f valueIdent, [ typedVal ])
 
     let getSchemasToGenerate (schema : Schema) =
         let schemas = ResizeArray<Schema>()
@@ -83,72 +77,34 @@ module rec A =
     and genGetValue (schema : Schema) (typ : SynType) (expr : SynExpr) =
         match schema with
         | :? PrimitiveSchema as s -> SynExpr.Downcast(expr, typ, range0)
-
         | :? FixedSchema as s -> SynExpr.CreateDowncast(expr, SynType.CreateArray(SynType.Byte)) |> callFromAvro s
-
-        // | :? ArraySchema as s ->
-
         | :? EnumSchema as s -> SynExpr.CreateDowncast(expr, SynType.Int) |> callFromAvro s
-
         | :? UnionSchema as u ->
             match u with
             | UnionSingle (ix, s) -> SynExpr.Downcast(expr, schemaType s, range0)
             | UnionSingleOptional (ix, s) -> SynExpr.CreateDowncastOption(expr, schemaType s)
             | _ -> SynExpr.CreateConst(SynConst.Unit)
-
         | s -> SynExpr.CreateConst(SynConst.CreateString($"Not implemented: {s}"))
 
-
     let genRecord (schema : RecordSchema) =
+        let typeName = Ident.Create schema.Name
+
         let mkFld (fld : Field) =
             let typ = schemaType fld.Schema
             let fid = Ident.Prefixed("__", Ident.Create(fld.Name))
             let pid = Ident.Create(fld.Name)
 
-            {| field = fld
-               fieldId = fid
-               propId = pid
-               typ = typ
-               synFld = SynField.Create(typ, name = fid) |}
-
-
-        let typeName = Ident.Create schema.Name
-        let thisIdent = Ident.Create "this"
+            { field = fld
+              privateFieldId = fid
+              propertyId = pid
+              typ = typ }
 
         let fields = schema.Fields |> Seq.map mkFld |> Seq.toList
-
-        let defaultCtor = SynMemberDefn.DefaultCtor (fields |> List.map (fun x -> (x.propId, x.typ)))
-        let unsafeCtor = SynMemberDefn.CreateUnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
-
-        let privateFields, props =
-            fields
-            |> List.map (fun x -> SynMemberDefn.CreatePropertyWithPrivateSetter(thisIdent, x.typ, x.fieldId, x.propId))
-            |> List.unzip
-
-        let specRec = SynMemberDefn.CreateAvroRecordInterface(thisIdent, typeName)
-
-        let equatable = SynMemberDefn.CreateIEquatable(thisIdent, SynType.Create typeName, fields |> List.map (fun x -> x.propId))
-
-        let typ =
-            SynTypeDefn.CreateClass(
-                typeName,
-                members =
-                    [ yield defaultCtor
-                      yield! privateFields
-                      yield unsafeCtor
-                      yield! props
-                      yield schemaMember schema
-                      yield specRec
-                      yield! equatable ],
-                attributes = [ SynAttributeList.Create(SynAttribute.Sealed) ]
-            )
-
+        let typ = SpecificRecord.createRecord typeName schema fields
         let decl = SynModuleDecl.Types([ typ ], range0)
-
         SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
 
     let genEnum (schema : EnumSchema) =
-        // Generate FromAvro
         let fromAvro =
             mkFromAvro (SynType.Int) (fun value ->
                 let cases =
@@ -162,9 +118,7 @@ module rec A =
                         ))
 
                 let cases = Seq.append cases [ SynMatchClause.CreateOtherwiseFailwith($"Invalid value for enum {schema.Fullname}") ]
-
                 SynExpr.CreateMatch(SynExpr.CreateIdent value, Seq.toList cases))
-
 
         let cases = schema.Symbols |> Seq.map (Ident.Create >> SynUnionCase.Create) |> List.ofSeq
 
@@ -177,44 +131,73 @@ module rec A =
             )
 
         let decl = SynModuleDecl.CreateType(enumType)
-
         SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
 
     let genFixed (schema : FixedSchema) =
         let typeName = Ident.Create schema.Name
+        let thisIdent = Ident.Create "this"
+        let baseIdent = Ident.Create "base"
+        let valueIdent = Ident.Create "value"
+        let valueExpr = SynExpr.CreateIdent valueIdent
 
-        let valueExpr = SynExpr.CreateIdent "value"
-        let valuePat = SynPat.CreateLongIdent("value", [])
+        let defaultCtor =
+            SynMemberDefn.DefaultCtor([ valueIdent, SynType.CreateArray SynType.Byte ], access = SynAccess.Private(range0))
 
-        // Generate smart constructor
-        let arrayLen = SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Array.length", valueExpr)
-        let okClause = SynMatchClause.Create(SynPat.CreateConst(SynConst.Int32 schema.Size), None, SynExpr.CreateOk valueExpr)
+        let unsafeCtor = SynMemberDefn.CreateUnsafeCtor(typeName, [ SynType.CreateArray SynType.Byte ])
 
-        let errClause =
-            SynMatchClause.CreateOtherwiseError $"Fixed size value {schema.Fullname} is required have length {schema.Size}"
+        let inheritance =
+            SynMemberDefn.ImplicitInherit(
+                SynType.Create "Avro.Specific.SpecificFixed",
+                SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.CreateIdent "uint", SynExpr.CreateConst(SynConst.Int32 schema.Size))),
+                Some(Ident.Create "base"),
+                range0
+            )
 
-        let ctorBody = SynExpr.CreateMatch(arrayLen, [ okClause; errClause ])
-        let ctor = SynMemberDefn.StaticMember(Ident.Create "Create", ctorBody, [ SynPat.CreateNamed(Ident.Create "value") ])
+        let ctorDo =
+            let baseValue = SynExpr.CreateLongIdent([ baseIdent; Ident.Create "Value" ])
+            SynMemberDefn.CreateLetBinding(SynBinding.Let(kind = SynBindingKind.Do, expr = SynExpr.Set(baseValue, valueExpr, range0)))
 
-        // create FromAvro
-        let fromAvro = mkFromAvro (SynType.CreateArray(SynType.Byte)) (fun value -> SynExpr.CreateApp(typeName, value))
+        let propSchema =
+            SynMemberDefn.InstanceMember(
+                thisIdent,
+                Ident.Create "Schema",
+                SynExpr.CreateApp(
+                    SynExpr.CreateLongIdent "Avro.Schema.Parse",
+                    SynExpr.CreateParen(SynExpr.CreateLongIdent($"{typeName.idText}.SCHEMA"))
+                ),
+                isOverride = true
+            )
 
-        // Generate union type
-        let case = SynUnionCase.Create(Ident.Create schema.Name, [ SynField.CreateArray(SynType.Byte) ])
+        let smartCtor =
+            let arrayLen = SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Array.length", valueExpr)
 
-        let fixedType =
-            SynTypeDefn.CreateUnion(typeName, [ case ], [ schemaMember schema; ctor; fromAvro ], access = SynAccess.Private(range0))
+            let okClause =
+                let result = SynExpr.CreateOk(SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.CreateIdent typeName, valueExpr)))
+                SynMatchClause.Create(SynPat.CreateConst(SynConst.Int32 schema.Size), None, result)
 
-        let decl = SynModuleDecl.Types([ fixedType ], range0)
+            let errClause =
+                SynMatchClause.CreateOtherwiseError $"Fixed size value {schema.Fullname} is required have length {schema.Size}"
 
-        // Generate active pattern match (since the constructor is private)
-        let valueMatch = SynPat.CreateLongIdent(typeName, [ valuePat ]) |> SynPat.CreateParen
+            SynMemberDefn.StaticMember(
+                Ident.Create "Create",
+                SynExpr.CreateMatch(arrayLen, [ okClause; errClause ]),
+                [ SynPat.CreateNamed valueIdent ]
+            )
+
+        let clazz =
+            SynTypeDefn.CreateClass(
+                typeName,
+                members = [ defaultCtor; inheritance; ctorDo; unsafeCtor; propSchema; schemaMember schema; smartCtor ]
+            )
+
+        let typeDecl = SynModuleDecl.CreateType clazz
 
         let activePattern =
-            SynModuleDecl.CreateLet [ SynBinding.Let(
-                                          pattern = SynPat.CreateLongIdent($"(|{typeName.idText}|)", [ valueMatch ]),
-                                          expr = valueExpr
-                                      ) ]
+            let valueMatch = SynPat.CreateParen(SynPat.CreateTyped(SynPat.CreateNamed valueIdent, SynType.Create typeName))
+            let getValue = SynExpr.CreateInstanceMethodCall(valueExpr, Ident.Create "Value")
+
+            SynModuleDecl.CreateLet
+                [ SynBinding.Let(pattern = SynPat.CreateLongIdent($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
 
         let companionModule =
             SynModuleDecl.CreateNestedModule(
@@ -225,15 +208,13 @@ module rec A =
                 [ activePattern ]
             )
 
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl; companionModule ])
-
+        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ typeDecl; companionModule ])
 
     let genType (schema : Schema) =
         match schema with
         | :? RecordSchema as s -> genRecord s
         | :? EnumSchema as s -> genEnum s
         | :? FixedSchema as s -> genFixed s
-
 
 module AvroGenerator =
     let GenerateAsync filename =

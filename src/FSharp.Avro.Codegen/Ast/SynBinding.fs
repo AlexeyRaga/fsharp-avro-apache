@@ -17,7 +17,8 @@ type SynValInfo with
     static member Empty = SynValInfo([], SynArgInfo.Empty)
 
 type SynBinding with
-    static member Let(?access, ?isInline, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr) =
+    static member Let(?kind, ?access, ?isInline, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr, ?trivia) =
+        let kind = defaultArg kind SynBindingKind.Normal
         let isInline = defaultArg isInline false
         let isMutable = defaultArg isMutable false
         let attributes = defaultArg attributes SynAttributes.Empty
@@ -28,12 +29,13 @@ type SynBinding with
         let bind = DebugPointAtBinding.NoneAtLet
 
         let trivia =
-            { LetKeyword = Some range0
-              EqualsRange = Some range0 }
+            defaultArg trivia
+                { LetKeyword = Some range0
+                  EqualsRange = Some range0 }
 
         SynBinding(
             access,
-            SynBindingKind.Normal,
+            kind,
             isInline,
             isMutable,
             attributes,
