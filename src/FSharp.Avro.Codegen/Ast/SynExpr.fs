@@ -41,7 +41,7 @@ type SynExpr with
 
         match args with
         | [] -> SynExpr.CreateApp(func, SynExpr.CreateConst(SynConst.Unit))
-        | [ x ] -> SynExpr.CreateApp(func, SynExpr.EnsureParen x)
+        | [ x ] -> SynExpr.CreateApp(func, x)
         | _ -> SynExpr.CreateApp(func, SynExpr.CreateParen(SynExpr.CreateTuple args))
 
     static member CreateApp(func : Ident, [<ParamArray>] args : Ident array) =
@@ -69,11 +69,16 @@ type SynExpr with
     static member Condition(lhs : SynExpr, comp : SynExpr, rhs : SynExpr) =
         SynExpr.CreateApp(lhs, SynExpr.CreateApp(comp, rhs))
 
+    static member CreateSome(value : SynExpr) =
+        SynExpr.CreateApp(SynExpr.CreateIdent "Some", SynExpr.EnsureParen value)
+
+    static member CreateNone = SynExpr.CreateIdent "None"
+
     static member CreateOk(value : SynExpr) =
-        SynExpr.CreateApp(SynExpr.CreateIdent "Ok", value)
+        SynExpr.CreateApp(SynExpr.CreateIdent "Ok", SynExpr.EnsureParen value)
 
     static member CreateError(value : SynExpr) =
-        SynExpr.CreateApp(SynExpr.CreateIdent "Error", value)
+        SynExpr.CreateApp(SynExpr.CreateIdent "Error", SynExpr.EnsureParen value)
 
     static member CreateStringError(value : string) =
         SynExpr.CreateApp(
@@ -84,10 +89,16 @@ type SynExpr with
     static member CreateFailwith(err : string) =
         SynExpr.CreateApp(SynExpr.CreateIdent "failwith", SynExpr.CreateConst(SynConst.CreateString err))
 
-    static member CreatePipeRightOp = SynExpr.CreateIdent(Ident.Create "op_PipeRight")
+    static member CreatePipeRightOp =
+        let ident = SynLongIdent([Ident.Create "op_PipeRight"], [], [Some (IdentTrivia.OriginalNotation("|>"))])
+        SynExpr.CreateLongIdent ident
 
     static member CreatePipeRight(lhs : SynExpr, rhs : SynExpr) =
         SynExpr.CreateApp(lhs, SynExpr.CreateApp(SynExpr.CreatePipeRightOp, rhs))
+
+
+    static member Ignore(expr : SynExpr) =
+        SynExpr.CreatePipeRight(expr, SynExpr.CreateIdent "ignore")
 
     static member CreateRecord(fields : list<RecordFieldName * option<SynExpr>>) =
         let fields = fields |> List.map (fun (rfn, synExpr) -> SynExprRecordField(rfn, None, synExpr, None))
@@ -158,5 +169,8 @@ type SynExpr with
 
     static member CreateOptionMap(expr : SynExpr) =
         SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Option.map", SynExpr.EnsureParen expr)
+
+    static member CreateSeqMap(mapFunction : SynExpr) =
+        SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Seq.map", mapFunction)
 
     static member CreateDowncast(expr : SynExpr, typ : SynType) = SynExpr.Downcast(expr, typ, range0)

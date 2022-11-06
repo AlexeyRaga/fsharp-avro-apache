@@ -27,7 +27,7 @@ type SynExpr with
 
 type SynMatchClause with
     static member CreateOtherwiseFailwith(errorMessage : string) =
-        SynMatchClause.Create(SynPat.CreateWild, None, SynExpr.CreateFailwith errorMessage)
+        SynMatchClause.Create(SynPat.CreateWild, SynExpr.CreateFailwith errorMessage)
 
 type SynMemberDefn with
     static member DefaultCtor(parameters : (Ident * SynType) list, ?selfIdent : Ident, ?access : SynAccess, ?attributes : SynAttributes) =

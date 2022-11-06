@@ -5,6 +5,7 @@
   "fields": [
     { "name": "id", "type": { "type": "string", "logicalType": "uuid" } },
     { "name": "num",  "type": "int" },
+    { "name": "array", "type": { "type": "array", "items":  "string" } },
     { "name": "optional_num",  "type": ["null", "int"] },
     { "name": "str", "type": "string" },
     { "name": "choice", "type": ["string", "int", "boolean"] },

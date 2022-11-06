@@ -40,7 +40,7 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
                 let equatable = SynExpr.Upcast(SynExpr.CreateIdent thisIdent, equatableType, range0)
                 let call = SynExpr.CreateInstanceMethodCall(SynExpr.CreateParen equatable, equalsMethodIdent, SynExpr.CreateIdent "x")
                 let p = SynPat.As(SynPat.IsInst(thisType, range0), SynPat.CreateNamed "x", range0)
-                SynMatchClause.Create(p, None, call)
+                SynMatchClause.Create(p, call)
 
             let nokCase = SynMatchClause.CreateOtherwise(SynExpr.CreateConst(SynConst.Bool false))
             let matchExpr = SynExpr.CreateMatch(SynExpr.CreateIdent "other", [ okCase; nokCase ])

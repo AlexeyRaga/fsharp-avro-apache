@@ -3,7 +3,7 @@ root = true
 [*]
 trim_trailing_whitespace = true
 insert_final_newline = true
-max_line_length=120
+max_line_length=140
 indent_size = 4
 indent_style = space
 end_of_line = lf
@@ -12,32 +12,15 @@ end_of_line = lf
 resharper_csharp_place_expr_method_on_single_line = never
 
 [*.{fs,fsx}]
-fsharp_max_record_number_of_items=2
-fsharp_max_array_or_list_width=100
-fsharp_max_array_or_list_number_of_items=3
-fsharp_max_value_binding_width=100
-fsharp_strict_mode=true
-fsharp_disable_elmish_syntax=true
-
-# [*.{fs,fsx}]
-# fsharp_max_record_number_of_items=2
-# fsharp_max_array_or_list_width=100
-# fsharp_max_array_or_list_number_of_items=3
-# fsharp_max_value_binding_width=100
-# fsharp_max_dot_get_expression_width=80
-# fsharp_newline_between_type_definition_and_members=true
-# fsharp_disable_elmish_syntax=true
-# fsharp_strict_mode=true
-
-max_line_length=140
-fsharp_space_before_colon=true
-fsharp_max_value_binding_width=120
-fsharp_max_infix_operator_expression=120
-fsharp_max_array_or_list_number_of_items=4
-# fsharp_multi_line_lambda_closing_newline=true
-# fsharp_newline_between_type_definition_and_members=true
 fsharp_bar_before_discriminated_union_declaration=false
-# fsharp_multiline_block_brackets_on_same_column=true
+fsharp_disable_elmish_syntax=true
+fsharp_max_array_or_list_number_of_items=2
+fsharp_max_array_or_list_width=80
+fsharp_max_infix_operator_expression=120
+fsharp_max_record_number_of_items=2
+fsharp_max_value_binding_width=120
+fsharp_space_before_colon=true
+fsharp_strict_mode=true
 
 # Terraform files
 [*.tf]

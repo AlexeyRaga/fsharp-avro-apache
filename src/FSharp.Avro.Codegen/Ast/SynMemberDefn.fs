@@ -29,10 +29,8 @@ type SynMemberDefn with
             ?setterAccess : SynAccess,
             ?setterAttrs : SynAttributes
         ) =
-
         let getterFlags = SynMemberFlags.Create(SynMemberKind.PropertyGet, trivia = SynMemberFlagsTrivia.InstanceMember)
         let setterFlags = SynMemberFlags.Create(SynMemberKind.PropertySet, trivia = SynMemberFlagsTrivia.InstanceMember)
-
         let valueIdent = Ident.Create "value"
 
         let getBinding =
@@ -60,7 +58,6 @@ type SynMemberDefn with
     static member CreateLetBinding(binding : SynBinding, ?isInline : bool, ?isRecursive : bool) =
         SynMemberDefn.LetBindings([ binding ], defaultArg isInline false, defaultArg isRecursive false, range0)
 
-
     static member Let(?access, ?isInline, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr) =
         SynBinding.Let(
             ?access = access,
@@ -75,8 +72,7 @@ type SynMemberDefn with
         )
         |> SynMemberDefn.CreateLetBinding
 
-
-    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list, ?attributes: SynAttributeList list) =
+    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list, ?attributes : SynAttributeList list) =
         let flags = SynMemberFlags.StaticMember
         let valData = SynValData(Some flags, SynValInfo.Empty, None)
 
@@ -87,10 +83,22 @@ type SynMemberDefn with
 
         let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ name ], memberArgs)
         let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
-
         SynMemberDefn.Member(bnd, range0)
 
-    static member InstanceMember(thisIdent : Ident, name : Ident, body : SynExpr, ?args : SynPat list, ?isOverride : bool, ?attributes: SynAttributeList list) =
+    static member StaticMethod1(name : Ident, paramType : SynType, mkBody : Ident -> SynExpr, ?attributes : SynAttributeList list) =
+        let valueIdent = Ident.Create "value"
+        let typedVal = SynPat.CreateTyped(valueIdent, paramType)
+        SynMemberDefn.StaticMember(name, mkBody valueIdent, [ typedVal ], ?attributes = attributes)
+
+    static member InstanceMember
+        (
+            thisIdent : Ident,
+            name : Ident,
+            body : SynExpr,
+            ?args : SynPat list,
+            ?isOverride : bool,
+            ?attributes : SynAttributeList list
+        ) =
         let flags =
             if defaultArg isOverride false then
                 { SynMemberFlags.InstanceMember with
@@ -108,5 +116,4 @@ type SynMemberDefn with
 
         let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], memberArgs)
         let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
-
         SynMemberDefn.Member(bnd, range0)
