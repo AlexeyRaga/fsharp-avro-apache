@@ -18,6 +18,9 @@ module ISpecificRecord =
     let private choice (n : int) (ofN : int) (expr : SynExpr) =
         SynExpr.CreateApp(SynExpr.CreateIdent $"Choice{n}Of{ofN}", expr)
 
+    let private typedAs (typ: SynType) (expr: SynExpr) =
+        SynExpr.CreateTyped(expr, typ) |> SynExpr.EnsureParen
+
     let private wildPat fld =
         SynPat.CreateTuple [ SynPat.CreateConst(SynConst.Int32 fld.field.Pos); SynPat.CreateWild ]
 
@@ -103,12 +106,12 @@ module ISpecificRecord =
                           setOtherwise SynExpr.CreateNone ]
                     | UnionCases xs ->
                         let count = List.length xs
-                        xs |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count)) |> List.ofSeq
+                        xs |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> typedAs fld.typ)) |> List.ofSeq
                     | UnionOptionalCases xs ->
                         let count = List.length xs
 
                         xs
-                        |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> SynExpr.CreateSome))
+                        |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> SynExpr.CreateSome >> typedAs fld.typ))
                         |> flip Seq.append [ setOtherwise SynExpr.CreateNone ]
                         |> List.ofSeq
                 | _ ->

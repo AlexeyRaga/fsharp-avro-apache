@@ -52,7 +52,7 @@ type SynType with
     static member Option(valueType : SynType, ?isPostfix : bool) =
         let isPostfix = defaultArg isPostfix false
         let typeName = if isPostfix then "option" else "Option"
-        SynType.CreateApp(SynType.Create typeName, [ valueType ])
+        SynType.CreateApp(SynType.Create typeName, [ valueType ], isPostfix = isPostfix)
 
     static member Set(elementType : SynType) =
         SynType.CreateApp(SynType.Create "Set", [ elementType ])
