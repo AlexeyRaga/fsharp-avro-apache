@@ -3,7 +3,6 @@ module FSharp.Compiler.Syntax.SynMemberDefn
 
 open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Text.Range
-open FSharp.Compiler.Xml
 
 type SynMemberFlags with
     static member Create(kind : SynMemberKind, ?isStatic : bool, ?trivia) : SynMemberFlags =
@@ -19,42 +18,6 @@ type SynMemberFlags with
     static member StaticMember = SynMemberFlags.Create(SynMemberKind.Member, true, SynMemberFlagsTrivia.StaticMember)
 
 type SynMemberDefn with
-    static member CreateGetSetProperty
-        (
-            thisIdent : Ident,
-            name : Ident,
-            fieldName : Ident,
-            ?getterAccess : SynAccess,
-            ?getterAttrs : SynAttributes,
-            ?setterAccess : SynAccess,
-            ?setterAttrs : SynAttributes
-        ) =
-        let getterFlags = SynMemberFlags.Create(SynMemberKind.PropertyGet, trivia = SynMemberFlagsTrivia.InstanceMember)
-        let setterFlags = SynMemberFlags.Create(SynMemberKind.PropertySet, trivia = SynMemberFlagsTrivia.InstanceMember)
-        let valueIdent = Ident.Create "value"
-
-        let getBinding =
-            SynBinding.Create(
-                getterFlags,
-                SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], [ SynPat.CreateUnit ], ?access = getterAccess),
-                SynExpr.CreateIdent fieldName,
-                ?attributes = getterAttrs
-            )
-
-        let setBinding =
-            SynBinding.Create(
-                setterFlags,
-                SynPat.CreateLongIdent(
-                    SynLongIdent.Create [ thisIdent; name ],
-                    [ SynPat.CreateParen(SynPat.CreateNamed valueIdent) ],
-                    ?access = setterAccess
-                ),
-                SynExpr.Set(SynExpr.CreateIdent fieldName, SynExpr.CreateIdent valueIdent, range0),
-                ?attributes = setterAttrs
-            )
-
-        SynMemberDefn.GetSetMember(Some getBinding, Some setBinding, range0, SynMemberGetSetTrivia.Zero)
-
     static member CreateLetBinding(binding : SynBinding, ?isInline : bool, ?isRecursive : bool) =
         SynMemberDefn.LetBindings([ binding ], defaultArg isInline false, defaultArg isRecursive false, range0)
 
@@ -72,7 +35,7 @@ type SynMemberDefn with
         )
         |> SynMemberDefn.CreateLetBinding
 
-    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list, ?attributes : SynAttributeList list) =
+    static member StaticMember(name : Ident, body : SynExpr, ?args : SynPat list, ?attributes : SynAttributeList list, ?access : SynAccess) =
         let flags = SynMemberFlags.StaticMember
         let valData = SynValData(Some flags, SynValInfo.Empty, None)
 
@@ -81,14 +44,9 @@ type SynMemberDefn with
             | Some xs -> [ SynPat.Tuple(false, xs, range0) |> SynPat.CreateParen ]
             | None -> []
 
-        let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ name ], memberArgs)
-        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
+        let pat = SynPat.Create(SynLongIdent.Create [ name ], memberArgs, ?access = access)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes, ?access = access)
         SynMemberDefn.Member(bnd, range0)
-
-    static member StaticMethod1(name : Ident, paramType : SynType, mkBody : Ident -> SynExpr, ?attributes : SynAttributeList list) =
-        let valueIdent = Ident.Create "value"
-        let typedVal = SynPat.CreateTyped(valueIdent, paramType)
-        SynMemberDefn.StaticMember(name, mkBody valueIdent, [ typedVal ], ?attributes = attributes)
 
     static member InstanceMember
         (
@@ -97,7 +55,8 @@ type SynMemberDefn with
             body : SynExpr,
             ?args : SynPat list,
             ?isOverride : bool,
-            ?attributes : SynAttributeList list
+            ?attributes : SynAttributeList list,
+            ?access : SynAccess
         ) =
         let flags =
             if defaultArg isOverride false then
@@ -114,6 +73,6 @@ type SynMemberDefn with
             | Some xs -> [ SynPat.Tuple(false, xs, range0) |> SynPat.CreateParen ]
             | None -> []
 
-        let pat = SynPat.CreateLongIdent(SynLongIdent.Create [ thisIdent; name ], memberArgs)
-        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes)
+        let pat = SynPat.Create(SynLongIdent.Create [ thisIdent; name ], memberArgs, ?access = access)
+        let bnd = SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes, ?access = access)
         SynMemberDefn.Member(bnd, range0)

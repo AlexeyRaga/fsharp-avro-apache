@@ -4,7 +4,7 @@ module FSharp.Compiler.Syntax.Ident
 open FSharp.Compiler.Text.Range
 
 type Ident with
-    static member Create text = Ident(text, range0)
+    static member Create (text : string) = Ident(text, range0)
 
     static member CreateLong(text : string) =
         text.Split([| '.' |]) |> List.ofArray |> List.map Ident.Create

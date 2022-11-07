@@ -15,10 +15,10 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
             let other = Ident.Create "other"
 
             let otherProp prop =
-                SynExpr.CreateLongIdent(SynLongIdent.Create [ other; prop ])
+                SynExpr.Create(SynLongIdent.Create [ other; prop ])
 
             let thisProp prop =
-                SynExpr.CreateLongIdent(thisMember prop)
+                SynExpr.Create(thisMember prop)
 
             props
             |> List.map (fun x -> SynExpr.Condition(otherProp x, SynExpr.OpEquality, thisProp x))
@@ -28,7 +28,7 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
             SynMemberDefn.Member(
                 SynBinding.Create(
                     interfaceMember,
-                    SynPat.CreateLongIdent(thisMember equalsMethodIdent, [ SynPat.CreateNamed "other" ]),
+                    SynPat.Create(thisMember equalsMethodIdent, [ SynPat.CreateNamed "other" ]),
                     equalExps
                 ),
                 range0
@@ -37,13 +37,13 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
 
         let objectEquals =
             let okCase =
-                let equatable = SynExpr.Upcast(SynExpr.CreateIdent thisIdent, equatableType, range0)
-                let call = SynExpr.CreateInstanceMethodCall(SynExpr.CreateParen equatable, equalsMethodIdent, SynExpr.CreateIdent "x")
+                let equatable = SynExpr.Upcast(SynExpr.Create thisIdent, equatableType, range0)
+                let call = SynExpr.MethodCall(SynExpr.CreateParen equatable, equalsMethodIdent, SynExpr.Create "x")
                 let p = SynPat.As(SynPat.IsInst(thisType, range0), SynPat.CreateNamed "x", range0)
                 SynMatchClause.Create(p, call)
 
-            let nokCase = SynMatchClause.CreateOtherwise(SynExpr.CreateConst(SynConst.Bool false))
-            let matchExpr = SynExpr.CreateMatch(SynExpr.CreateIdent "other", [ okCase; nokCase ])
+            let nokCase = SynMatchClause.Otherwise(SynExpr.CreateConst(SynConst.Bool false))
+            let matchExpr = SynExpr.CreateMatch(SynExpr.Create "other", [ okCase; nokCase ])
 
             SynMemberDefn.InstanceMember(thisIdent, equalsMethodIdent, matchExpr, [ SynPat.CreateNamed "other" ], isOverride = true)
 
@@ -52,11 +52,11 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
         let getHashCode =
             let vals =
                 props
-                |> List.map (thisMember >> SynExpr.CreateLongIdent)
+                |> List.map (thisMember >> SynExpr.Create)
                 |> SynExpr.CreateTuple
                 |> SynExpr.CreateParen
 
-            let expr = SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "hash", vals)
+            let expr = SynExpr.MethodCall(SynLongIdent.Create "hash", vals)
             SynMemberDefn.InstanceMember(thisIdent, Ident.Create "GetHashCode", expr, [], isOverride = true)
 
         [ equatable; objectEquals; getHashCode ]

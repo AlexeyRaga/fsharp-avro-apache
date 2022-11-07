@@ -62,8 +62,8 @@ type SynAttribute with
         let args = [
             SynExpr.CreateConst (SynConst.CreateString("This method is not intended for use from F#."))
             SynExpr.CreateConst(SynConst.Int32(10001))
-            SynExpr.Condition(SynExpr.CreateIdent "IsError", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
-            SynExpr.Condition(SynExpr.CreateIdent "IsHidden", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
+            SynExpr.Condition(SynExpr.Create "IsError", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
+            SynExpr.Condition(SynExpr.Create "IsHidden", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
         ]
         { AppliesToGetterAndSetter = false
           ArgExpr = SynExpr.CreateParen (SynExpr.CreateTuple args)

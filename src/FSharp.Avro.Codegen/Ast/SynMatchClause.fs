@@ -15,11 +15,6 @@ type SynMatchClause with
     static member Create(ident : Ident, result, ?whenExp) =
         SynMatchClause.Create(SynPat.CreateNamed ident, result, ?whenExp = whenExp)
 
-    static member CreateOtherwise(expr : SynExpr) =
+    static member Otherwise(expr : SynExpr) =
         SynMatchClause.Create(SynPat.CreateWild, expr)
 
-    static member CreateOtherwiseError(errorMessage : string) =
-        SynMatchClause.CreateOtherwise(SynExpr.CreateStringError errorMessage)
-
-    static member CreateWild(expr : SynExpr) =
-        SynMatchClause.Create(SynPat.CreateWild, expr)

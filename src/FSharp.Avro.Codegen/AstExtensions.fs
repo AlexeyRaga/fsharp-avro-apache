@@ -6,28 +6,66 @@ open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml
 
+type Ident with
+    static member Choice(num : int, ofN : int) = Ident.Create $"Choice{num}Of{ofN}"
+
+type SynPat with
+    static member Choice(num : int, ofN : int, value : Ident) =
+        SynPat.Create($"Choice{num}Of{ofN}", [ SynPat.CreateNamed value ])
+
+    static member Some(value : SynPat) =
+        SynPat.Create("Some", [ SynPat.CreateParen value ])
+
+    static member Int32(value : int) =
+        SynPat.CreateConst(SynConst.Int32 value)
+
 type SynExpr with
-    static member CreateDowncastLambda(typ : SynType) =
-        SynExpr.CreateLambda(Ident.Create "x", SynExpr.Downcast(SynExpr.CreateIdent "x", typ, range0))
+    static member Int32(value : int) =
+        SynExpr.CreateConst(SynConst.Int32 value)
 
-    static member CreateDowncastOptionPipeline(typ : SynType) =
-        SynExpr.CreatePipeRight(SynExpr.CreateOptionOfObj(), SynExpr.CreateOptionMap(SynExpr.CreateDowncastLambda typ))
+    static member Box = SynExpr.Create "box"
+    static member Boxed(expr : SynExpr) = SynExpr.CreateApp(SynExpr.Box, expr)
 
-    static member CreateDowncastOption(expr : SynExpr, typ : SynType) =
-        SynExpr.CreatePipeRight(
-            expr,
-            SynExpr.CreatePipeRight(SynExpr.CreateOptionOfObj(), SynExpr.CreateOptionMap(SynExpr.CreateDowncastLambda typ))
-        )
+    static member Choice(num : int, ofN : int, value : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create(Ident.Choice(num, ofN)), value)
 
-    static member CreateFailwith(err : string) =
-        SynExpr.CreateApp(SynExpr.CreateIdent "failwith", SynExpr.CreateConst(SynConst.CreateString err))
+    static member OptionMap(expr : SynExpr) =
+        SynExpr.MethodCall(SynLongIdent.Create "Option.map", expr)
+
+    static member OptionDefault(defaultValue : SynExpr) =
+        SynExpr.MethodCall(SynLongIdent.Create "Option.defaultValue", defaultValue)
+
+    static member Some(value : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create "Some", SynExpr.EnsureParen value)
+
+    static member None = SynExpr.Create "None"
+
+    static member Ok(value : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create "Ok", SynExpr.EnsureParen value)
+
+    static member Error(value : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create "Error", SynExpr.EnsureParen value)
+
+    static member Error(value : string) =
+        SynExpr.CreateApp(SynExpr.Create "Error", SynExpr.CreateConst(SynConst.String(value, SynStringKind.Regular, range0)))
+
+    static member SeqMap(mapFunction : SynExpr) =
+        SynExpr.MethodCall(SynLongIdent.Create "Seq.map", mapFunction)
+
+    static member Failwith(err : string) =
+        SynExpr.CreateApp(SynExpr.Create "failwith", SynExpr.CreateConst(SynConst.CreateString err))
 
     static member UncheckedDefault(typ : SynType) =
-        SynExpr.CreateInstanceMethodCall(SynLongIdent.Create("Unchecked.defaultof"), [ typ ])
+        SynExpr.MethodCall(SynLongIdent.Create("Unchecked.defaultof"), [ typ ])
 
 type SynMatchClause with
-    static member CreateOtherwiseFailwith(errorMessage : string) =
-        SynMatchClause.Create(SynPat.CreateWild, SynExpr.CreateFailwith errorMessage)
+    static member OtherwiseError(errorMessage : string) =
+        SynMatchClause.Otherwise(SynExpr.Error errorMessage)
+
+    static member OtherwiseFailwith(errorMessage : string) =
+        SynMatchClause.Otherwise(SynExpr.Failwith errorMessage)
+
+    static member OtherwiseNull = SynMatchClause.Otherwise SynExpr.CreateNull
 
 type SynMemberDefn with
     static member DefaultCtor(parameters : (Ident * SynType) list, ?selfIdent : Ident, ?access : SynAccess, ?attributes : SynAttributes) =
@@ -42,26 +80,21 @@ type SynMemberDefn with
             range0
         )
 
-    static member CreateUnsafeCtor(typeName : Ident, types : SynType list) =
+    static member UnsafeCtor(typeName : Ident, types : SynType list) =
         let unsafeArgs = types |> List.map SynExpr.UncheckedDefault
         let callCtor = SynExpr.CreateApp(SynExpr.Ident typeName, unsafeArgs)
 
         SynMemberDefn.Member(
             SynBinding.Create(
                 SynMemberFlags.Create(SynMemberKind.Constructor),
-                SynPat.CreateLongIdent("new", [ SynPat.CreateUnit ]),
+                SynPat.Create("new", [ SynPat.CreateUnit ]),
                 callCtor,
                 attributes = [ SynAttributeList.Create SynAttribute.NotForFSharp ]
             ),
             range0
         )
 
-    static member CreatePropertyWithPrivateSetter(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident) =
-        let fld = SynMemberDefn.Let(isMutable = true, pattern = SynPat.CreateNamed fieldIdent, expr = SynExpr.CreateIdent propIdent)
-        let prop = SynMemberDefn.CreateGetSetProperty(thisIdent, propIdent, fieldIdent, setterAccess = SynAccess.Private(range0))
-        fld, prop
-
-    static member CreateGetterForField(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident) =
-        let fld = SynMemberDefn.Let(isMutable = true, pattern = SynPat.CreateNamed fieldIdent, expr = SynExpr.CreateIdent propIdent)
-        let prop = SynMemberDefn.InstanceMember(thisIdent, propIdent, SynExpr.CreateIdent fieldIdent)
+    static member GetterForField(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident) =
+        let fld = SynMemberDefn.Let(isMutable = true, pattern = SynPat.CreateNamed fieldIdent, expr = SynExpr.Create propIdent)
+        let prop = SynMemberDefn.InstanceMember(thisIdent, propIdent, SynExpr.Create fieldIdent)
         fld, prop

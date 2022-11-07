@@ -18,15 +18,15 @@ type SynSimplePats with
         SynSimplePats.SimplePats(patterns, range0)
 
 type SynPat with
-    static member CreateLongIdent(ident : SynLongIdent, args, ?typarDecls, ?extraId, ?access) =
+    static member Create(ident : SynLongIdent, args, ?typarDecls, ?extraId, ?access) =
         let args = SynArgPats.Pats(args)
         SynPat.LongIdent(ident, extraId, typarDecls, args, access, range0)
 
-    static member CreateLongIdent(name : string, args : SynPat list) =
-        SynPat.CreateLongIdent(SynLongIdent.Create name, args)
+    static member Create(name : string, args : SynPat list) =
+        SynPat.Create(SynLongIdent.Create name, args)
 
-    static member CreateLongIdent(ident : Ident, args : SynPat list) =
-        SynPat.CreateLongIdent(SynLongIdent.Create [ ident ], args)
+    static member Create(ident : Ident, args : SynPat list) =
+        SynPat.Create(SynLongIdent.Create [ ident ], args)
 
     static member CreateNamed(ident : SynIdent, ?isThisVal, ?access) =
         let isThisVal = defaultArg isThisVal false

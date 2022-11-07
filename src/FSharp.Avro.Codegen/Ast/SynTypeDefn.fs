@@ -6,7 +6,7 @@ open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml
 
 type SynTypeDefn with
-    static member CreateFromRepr
+    static member FromRepr
         (
             name : Ident,
             repr : SynTypeDefnRepr,
@@ -25,7 +25,7 @@ type SynTypeDefn with
         SynTypeDefn(name, repr, extraMembers, None, range0, trivia)
 
     static member CreateClass(name : Ident, members : SynMemberDefns, ?attributes : SynAttributeList list, ?xmldoc : PreXmlDoc) =
-        SynTypeDefn.CreateFromRepr(
+        SynTypeDefn.FromRepr(
             name,
             SynTypeDefnRepr.ObjectModel(SynTypeDefnKind.Class, members, range0),
             ?members = None,
@@ -44,7 +44,7 @@ type SynTypeDefn with
         ) =
         let repr = SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Union(access, cases, range0), range0)
 
-        SynTypeDefn.CreateFromRepr(
+        SynTypeDefn.FromRepr(
             name,
             repr,
             defaultArg members SynMemberDefns.Empty,
@@ -62,7 +62,7 @@ type SynTypeDefn with
         ) =
         let repr = SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(None, Seq.toList fields, range0), range0)
 
-        SynTypeDefn.CreateFromRepr(
+        SynTypeDefn.FromRepr(
             name,
             repr,
             defaultArg members SynMemberDefns.Empty,

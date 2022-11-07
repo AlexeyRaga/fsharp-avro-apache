@@ -4,5 +4,5 @@ module FSharp.Compiler.Syntax.SynConst
 open FSharp.Compiler.Text.Range
 
 type SynConst with
-    static member CreateString s =
-        SynConst.String(s, SynStringKind.Regular, range0)
+    static member CreateString(value : string, ?kind : SynStringKind) =
+        SynConst.String(value, defaultArg kind SynStringKind.Regular, range0)

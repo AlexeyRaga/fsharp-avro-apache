@@ -11,11 +11,6 @@ open Schema
 open FSharp.Avro.Codegen.Generators
 
 module rec A =
-    let private fromAvroMethodIdent = Ident.Create "FromAvro"
-
-    let private callFromAvro (schema : NamedSchema) (value : SynExpr) =
-        SynExpr.CreateInstanceMethodCall(SynLongIdent.Create $"{schema.Fullname}.{fromAvroMethodIdent.idText}", SynExpr.EnsureParen value)
-
     let getSchemasToGenerate (schema : Schema) =
         let schemas = ResizeArray<Schema>()
 
@@ -33,18 +28,6 @@ module rec A =
 
         loop schema
         schemas.ToArray()
-
-    let genGetValue (schema : Schema) (typ : SynType) (expr : SynExpr) =
-        match schema with
-        | :? PrimitiveSchema as s -> SynExpr.Downcast(expr, typ, range0)
-        | :? FixedSchema as s -> SynExpr.CreateDowncast(expr, SynType.CreateArray(SynType.Byte)) |> callFromAvro s
-        | :? EnumSchema as s -> SynExpr.CreateDowncast(expr, SynType.Int) |> callFromAvro s
-        | :? UnionSchema as u ->
-            match u with
-            | UnionSingle (_, s) -> SynExpr.Downcast(expr, schemaType s, range0)
-            | UnionSingleOptional (_, s) -> SynExpr.CreateDowncastOption(expr, schemaType s)
-            | _ -> SynExpr.CreateConst(SynConst.Unit)
-        | s -> SynExpr.CreateConst(SynConst.CreateString($"Not implemented: {s}"))
 
     let genRecord (schema : RecordSchema) =
         let typeName = Ident.Create schema.Name
@@ -65,23 +48,28 @@ module rec A =
         SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
 
     let genEnum (schema : EnumSchema) =
-        let fromAvro =
-            let valueIdent = Ident.Create "value"
+        let fromInt =
             let typedVal = SynPat.CreateTyped(valueIdent, SynType.Int)
 
             let expr =
                 let cases =
                     schema.Symbols
-                    |> Seq.mapi (fun ix case ->
-                        SynMatchClause.Create(
-                            SynPat.CreateConst(SynConst.Int32 ix),
-                            SynExpr.CreateLongIdent $"{schema.Fullname}.{case}"
-                        ))
+                    |> Seq.mapi (fun ix case -> SynMatchClause.Create(SynPat.Int32 ix, SynExpr.Create $"{schema.Fullname}.{case}"))
+                    |> flip Seq.append [ SynMatchClause.OtherwiseFailwith($"Invalid value for enum {schema.Fullname}") ]
 
-                let cases = Seq.append cases [ SynMatchClause.CreateOtherwiseFailwith($"Invalid value for enum {schema.Fullname}") ]
-                SynExpr.CreateMatch(SynExpr.CreateIdent valueIdent, Seq.toList cases)
+                SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
 
-            SynMemberDefn.StaticMember(Ident.Create "FromInt", expr, [ typedVal ])
+            SynMemberDefn.StaticMember(Ident.Create "FromInt", expr, [ typedVal ], access = SynAccess.Internal(range0))
+
+        let toInt =
+            let expr =
+                let cases =
+                    schema.Symbols
+                    |> Seq.mapi (fun ix case -> SynMatchClause.Create(SynPat.CreateNamed $"{schema.Fullname}.{case}", SynExpr.Int32 ix))
+
+                SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
+
+            SynMemberDefn.StaticMember(Ident.Create "ToInt", expr, [ valuePat ], access = SynAccess.Internal(range0))
 
         let cases = schema.Symbols |> Seq.map (Ident.Create >> SynUnionCase.Create) |> List.ofSeq
 
@@ -89,7 +77,7 @@ module rec A =
             SynTypeDefn.CreateUnion(
                 Ident.Create schema.Name,
                 cases,
-                [ schemaMember schema; fromAvro ],
+                [ schemaMember schema; fromInt; toInt ],
                 attributes = [ SynAttributeList.Create(SynAttribute.RequireQualifiedAccess) ]
             )
 
@@ -101,45 +89,41 @@ module rec A =
         let thisIdent = Ident.Create "this"
         let baseIdent = Ident.Create "base"
         let valueIdent = Ident.Create "value"
-        let valueExpr = SynExpr.CreateIdent valueIdent
+        let valueExpr = SynExpr.Create valueIdent
 
         let defaultCtor =
             SynMemberDefn.DefaultCtor([ valueIdent, SynType.CreateArray SynType.Byte ], access = SynAccess.Private(range0))
 
-        let unsafeCtor = SynMemberDefn.CreateUnsafeCtor(typeName, [ SynType.CreateArray SynType.Byte ])
+        let unsafeCtor = SynMemberDefn.UnsafeCtor(typeName, [ SynType.CreateArray SynType.Byte ])
 
         let inheritance =
             SynMemberDefn.ImplicitInherit(
                 SynType.Create "Avro.Specific.SpecificFixed",
-                SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.CreateIdent "uint", SynExpr.CreateConst(SynConst.Int32 schema.Size))),
+                SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.Create "uint", SynExpr.CreateConst(SynConst.Int32 schema.Size))),
                 Some(Ident.Create "base"),
                 range0
             )
 
         let ctorDo =
-            let baseValue = SynExpr.CreateLongIdent([ baseIdent; Ident.Create "Value" ])
+            let baseValue = SynExpr.Create([ baseIdent; Ident.Create "Value" ])
             SynMemberDefn.CreateLetBinding(SynBinding.Let(kind = SynBindingKind.Do, expr = SynExpr.Set(baseValue, valueExpr, range0)))
 
         let propSchema =
             SynMemberDefn.InstanceMember(
                 thisIdent,
                 Ident.Create "Schema",
-                SynExpr.CreateApp(
-                    SynExpr.CreateLongIdent "Avro.Schema.Parse",
-                    SynExpr.CreateParen(SynExpr.CreateLongIdent($"{typeName.idText}.SCHEMA"))
-                ),
+                SynExpr.CreateApp(SynExpr.Create "Avro.Schema.Parse", SynExpr.CreateParen(SynExpr.Create($"{typeName.idText}.SCHEMA"))),
                 isOverride = true
             )
 
         let smartCtor =
-            let arrayLen = SynExpr.CreateInstanceMethodCall(SynLongIdent.Create "Array.length", valueExpr)
+            let arrayLen = SynExpr.MethodCall(SynLongIdent.Create "Array.length", valueExpr)
 
             let okClause =
-                let result = SynExpr.CreateOk(SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.CreateIdent typeName, valueExpr)))
+                let result = SynExpr.Ok(SynExpr.CreateParen(SynExpr.CreateApp(SynExpr.Create typeName, valueExpr)))
                 SynMatchClause.Create(SynPat.CreateConst(SynConst.Int32 schema.Size), result)
 
-            let errClause =
-                SynMatchClause.CreateOtherwiseError $"Fixed size value {schema.Fullname} is required have length {schema.Size}"
+            let errClause = SynMatchClause.OtherwiseError $"Fixed size value {schema.Fullname} is required have length {schema.Size}"
 
             SynMemberDefn.StaticMember(
                 Ident.Create "Create",
@@ -164,10 +148,10 @@ module rec A =
 
         let activePattern =
             let valueMatch = SynPat.CreateParen(SynPat.CreateTyped(SynPat.CreateNamed valueIdent, SynType.Create typeName))
-            let getValue = SynExpr.CreateInstanceMethodCall(valueExpr, Ident.Create "Value")
+            let getValue = SynExpr.MethodCall(valueExpr, Ident.Create "Value")
 
             SynModuleDecl.CreateLet
-                [ SynBinding.Let(pattern = SynPat.CreateLongIdent($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
+                [ SynBinding.Let(pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
 
         let companionModule =
             SynModuleDecl.CreateNestedModule(

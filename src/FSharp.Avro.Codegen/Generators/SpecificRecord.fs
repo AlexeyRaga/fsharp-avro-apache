@@ -15,10 +15,9 @@ type RecordField =
 
 [<RequireQualifiedAccess>]
 module ISpecificRecord =
-    let private choice (n : int) (ofN : int) (expr : SynExpr) =
-        SynExpr.CreateApp(SynExpr.CreateIdent $"Choice{n}Of{ofN}", expr)
+    let private choice (n : int) (ofN : int) (expr : SynExpr) = SynExpr.Choice(n, ofN, expr)
 
-    let private typedAs (typ: SynType) (expr: SynExpr) =
+    let private typedAs (typ : SynType) (expr : SynExpr) =
         SynExpr.CreateTyped(expr, typ) |> SynExpr.EnsureParen
 
     let private wildPat fld =
@@ -29,21 +28,26 @@ module ISpecificRecord =
         SynPat.CreateTuple [ SynPat.CreateConst(SynConst.Int32 fld.field.Pos); isType ]
 
     let directFieldSetter (target : RecordField) (value : SynExpr) =
-        let target = SynExpr.CreateIdent target.privateFieldId
+        let target = SynExpr.Create target.privateFieldId
         SynExpr.Set(target, value, range0)
 
     let reflectionPropertySetter (target : RecordField) (value : SynExpr) =
         let propName = SynExpr.CreateConst(SynConst.CreateString target.propertyId.idText)
-        let thisType = SynExpr.CreateInstanceMethodCall(thisExpr, Ident.Create "GetType", SynExpr.CreateUnit)
-        let propExpr = SynExpr.CreateInstanceMethodCall(thisType, Ident.Create "GetProperty", SynExpr.CreateParen propName)
+        let thisType = SynExpr.MethodCall(thisExpr, Ident.Create "GetType", SynExpr.CreateUnit)
+        let propExpr = SynExpr.MethodCall(thisType, Ident.Create "GetProperty", SynExpr.CreateParen propName)
         let invokeArgs = SynExpr.CreateParen(SynExpr.CreateTuple [ thisExpr; SynExpr.ArrayOrListComputed(true, value, range0) ])
-        SynExpr.CreateInstanceMethodCall(propExpr, SynLongIdent.Create("SetMethod.Invoke"), invokeArgs) |> SynExpr.Ignore
+        SynExpr.MethodCall(propExpr, SynLongIdent.Create("SetMethod.Invoke"), invokeArgs) |> SynExpr.Ignore
+
+    let private getterMatchCase (fld : RecordField) transform =
+        let pattern = SynPat.CreateConst(SynConst.Int32 fld.field.Pos)
+        let boxedValue = transform (SynExpr.Create [ thisIdent; fld.propertyId ])
+        SynMatchClause.Create(pattern, boxedValue)
 
     let private setMatchUnionCase setter fld typ mkValue =
         let lambdaVar = Ident.Create "x"
         let isType = SynPat.CreateParen(SynPat.CreateAs(SynPat.CreateIsInst typ, SynPat.CreateNamed lambdaVar))
         let pattern = SynPat.CreateTuple [ SynPat.CreateConst(SynConst.Int32 fld.field.Pos); isType ]
-        SynMatchClause.Create(pattern, (setter fld (mkValue (SynExpr.CreateIdent lambdaVar))))
+        SynMatchClause.Create(pattern, (setter fld (mkValue (SynExpr.Create lambdaVar))))
 
     let private setWildUnionCase setter fld value =
         SynMatchClause.Create(wildPat fld, (setter fld value))
@@ -55,7 +59,7 @@ module ISpecificRecord =
             SynPat.CreateParen(SynPat.CreateAs(SynPat.CreateIsInst(SynType.CreateArray(SynType.Byte)), SynPat.CreateNamed "x"))
 
         let pattern = SynPat.CreateTuple [ SynPat.CreateConst(SynConst.Int32 fld.field.Pos); isType ]
-        let expr = setter fld (SynExpr.CreateApp(SynExpr.CreateLongIdent fld.field.Schema.Fullname, SynExpr.CreateIdent "x"))
+        let expr = setter fld (SynExpr.CreateApp(SynExpr.Create fld.field.Schema.Fullname, SynExpr.Create "x"))
         SynMatchClause.Create(pattern, expr)
 
     let implementInterface (thisIdent : Ident) (typeName : Ident) (fields : RecordField list) (setter : RecordField -> SynExpr -> SynExpr) =
@@ -63,7 +67,47 @@ module ISpecificRecord =
 
         let methodGet =
             let parameters = [ SynPat.CreateTyped("pos", SynType.Int) ]
-            SynMemberDefn.InstanceMember(thisIdent, Ident.Create "Get", SynExpr.CreateUnit, parameters, attributes = methodAttrs)
+
+            let mkCase fld =
+                match fld.field.Schema with
+                | :? EnumSchema as s ->
+                    let convert value =
+                        SynExpr.MethodCall(SynExpr.Create s.Fullname, Ident.Create "ToInt", args = value) |-> SynExpr.Box
+
+                    [ getterMatchCase fld convert ]
+                | :? UnionSchema as s ->
+                    match s with
+                    | UnionEmpty -> [ getterMatchCase fld (fun _ -> SynExpr.CreateNull) ]
+                    | UnionSingle _ -> [ getterMatchCase fld SynExpr.Boxed ]
+                    | UnionSingleOptional _ ->
+                        let getBoxedValue value =
+                            value |-> SynExpr.OptionMap(SynExpr.Create "box") |-> SynExpr.OptionDefault SynExpr.CreateNull
+
+                        [ getterMatchCase fld getBoxedValue ]
+                    | UnionCases xs ->
+                        let count = List.length xs
+
+                        let cases =
+                            xs
+                            |> List.mapi (fun num _ ->
+                                SynMatchClause.Create(SynPat.Choice(num + 1, count, valueIdent), SynExpr.Boxed(valueExpr)))
+
+                        [ getterMatchCase fld (fun x -> SynExpr.CreateMatch(x, cases)) ]
+                    | UnionOptionalCases xs ->
+                        let count = List.length xs
+
+                        let cases =
+                            xs
+                            |> Seq.mapi (fun num _ ->
+                                SynMatchClause.Create(SynPat.Some(SynPat.Choice(num + 1, count, valueIdent)), SynExpr.Boxed valueExpr))
+                            |> flip Seq.append [ SynMatchClause.OtherwiseNull ]
+                            |> Seq.toList
+
+                        [ getterMatchCase fld (fun x -> SynExpr.CreateMatch(x, cases)) ]
+                | _ -> [ getterMatchCase fld SynExpr.Boxed ]
+
+            let cases = SynExpr.CreateMatch(SynExpr.Create "pos", List.collect mkCase fields)
+            SynMemberDefn.InstanceMember(thisIdent, Ident.Create "Get", cases, parameters, attributes = methodAttrs)
 
         let methodPut =
             let parameters =
@@ -80,7 +124,7 @@ module ISpecificRecord =
                 | :? LogicalSchema -> [ setCastedValue setter fld ]
                 | :? EnumSchema as s ->
                     let convert value =
-                        SynExpr.CreateInstanceMethodCall(SynExpr.CreateLongIdent s.Fullname, Ident.Create "FromInt", args = value)
+                        SynExpr.MethodCall(SynExpr.Create s.Fullname, Ident.Create "FromInt", args = value)
 
                     [ setMatching SynType.Int convert ]
                 | :? ArraySchema as s ->
@@ -88,43 +132,34 @@ module ISpecificRecord =
                     [ setMatching typ id ]
                 | :? MapSchema as s ->
                     let typ = SynType.IDictionary(SynType.String, schemaType s.ValueSchema)
-                    let unwrapKV = SynExpr.CreateSeqMap(SynExpr.CreateParen(SynExpr.CreateIdent "|KeyValue|"))
+                    let unwrapKV = SynExpr.SeqMap(SynExpr.CreateParen(SynExpr.Create "|KeyValue|"))
 
                     let convert x =
-                        SynExpr.CreateInstanceMethodCall(
-                            SynLongIdent.Create "Map.ofSeq",
-                            SynExpr.CreateParen(SynExpr.CreateApp(unwrapKV, [ x ]))
-                        )
+                        SynExpr.MethodCall(SynLongIdent.Create "Map.ofSeq", SynExpr.CreateParen(SynExpr.CreateApp(unwrapKV, [ x ])))
 
                     [ setMatching typ convert ]
                 | :? UnionSchema as union ->
                     match union with
                     | UnionEmpty -> [ SynMatchClause.Create(wildPat fld, setter fld SynExpr.CreateUnit) ]
-                    | UnionSingle (_, x) -> [ setMatching (schemaType x) SynExpr.CreateSome ]
-                    | UnionSingleOptional (_, x) ->
-                        [ setMatching (schemaType x) SynExpr.CreateSome
-                          setOtherwise SynExpr.CreateNone ]
+                    | UnionSingle (_, x) -> [ setMatching (schemaType x) SynExpr.Some ]
+                    | UnionSingleOptional (_, x) -> [ setMatching (schemaType x) SynExpr.Some; setOtherwise SynExpr.None ]
                     | UnionCases xs ->
                         let count = List.length xs
-                        xs |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> typedAs fld.typ)) |> List.ofSeq
+
+                        xs
+                        |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> typedAs fld.typ))
+                        |> List.ofSeq
                     | UnionOptionalCases xs ->
                         let count = List.length xs
 
                         xs
-                        |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> SynExpr.CreateSome >> typedAs fld.typ))
-                        |> flip Seq.append [ setOtherwise SynExpr.CreateNone ]
+                        |> Seq.mapi (fun ix (_, x) -> setMatching (schemaType x) (choice (ix + 1) count >> SynExpr.Some >> typedAs fld.typ))
+                        |> flip Seq.append [ setOtherwise SynExpr.None ]
                         |> List.ofSeq
-                | _ ->
-                    [ SynMatchClause.Create(
-                          wildPat fld,
-                          SynExpr.CreateFailwith $"Not implemented: {fld.field.Name}: {fld.field.Schema.Tag}"
-                      ) ]
+                | _ -> [ SynMatchClause.Create(wildPat fld, SynExpr.Failwith $"Not implemented: {fld.field.Name}: {fld.field.Schema.Tag}") ]
 
             let cases =
-                SynExpr.CreateMatch(
-                    SynExpr.CreateTuple [ SynExpr.CreateIdent "pos"; SynExpr.CreateIdent "value" ],
-                    List.collect mkCase fields
-                )
+                SynExpr.CreateMatch(SynExpr.CreateTuple [ SynExpr.Create "pos"; SynExpr.Create "value" ], List.collect mkCase fields)
 
             SynMemberDefn.InstanceMember(thisIdent, Ident.Create "Put", cases, parameters, attributes = methodAttrs)
 
@@ -132,10 +167,7 @@ module ISpecificRecord =
             SynMemberDefn.InstanceMember(
                 thisIdent,
                 Ident.Create "Schema",
-                SynExpr.CreateApp(
-                    SynExpr.CreateLongIdent "Avro.Schema.Parse",
-                    SynExpr.CreateParen(SynExpr.CreateLongIdent($"{typeName.idText}.SCHEMA"))
-                )
+                SynExpr.CreateApp(SynExpr.Create "Avro.Schema.Parse", SynExpr.CreateParen(SynExpr.Create($"{typeName.idText}.SCHEMA")))
             )
 
         SynMemberDefn.Interface(
@@ -148,11 +180,11 @@ module ISpecificRecord =
 module SpecificRecord =
     let createClass (typeName : Ident) (schema : Schema) (fields : RecordField list) =
         let defaultCtor = SynMemberDefn.DefaultCtor(fields |> List.map (fun x -> (x.propertyId, x.typ)))
-        let unsafeCtor = SynMemberDefn.CreateUnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
+        let unsafeCtor = SynMemberDefn.UnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
 
         let privateFields, props =
             fields
-            |> List.map (fun x -> SynMemberDefn.CreateGetterForField(thisIdent, x.typ, x.privateFieldId, x.propertyId))
+            |> List.map (fun x -> SynMemberDefn.GetterForField(thisIdent, x.typ, x.privateFieldId, x.propertyId))
             |> List.unzip
 
         let specRec = ISpecificRecord.implementInterface thisIdent typeName fields ISpecificRecord.directFieldSetter
