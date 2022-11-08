@@ -10,6 +10,10 @@ open Fantomas.Core
 open Schema
 open FSharp.Avro.Codegen.Generators
 
+type GeneratedCode =
+    { Namespace : string
+      Declarations : SynModuleDecl list }
+
 module rec A =
     let getSchemasToGenerate (schema : Schema) =
         let schemas = ResizeArray<Schema>()
@@ -45,7 +49,9 @@ module rec A =
         let fields = schema.Fields |> Seq.map mkFld |> Seq.toList
         let typ = SpecificRecord.createRecord typeName schema fields
         let decl = SynModuleDecl.Types([ typ ], range0)
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
+
+        { Namespace = schema.Namespace
+          Declarations = [ decl ] }
 
     let genEnum (schema : EnumSchema) =
         let fromInt =
@@ -82,7 +88,9 @@ module rec A =
             )
 
         let decl = SynModuleDecl.CreateType(enumType)
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ decl ], isRecursive = true)
+
+        { Namespace = schema.Namespace
+          Declarations = [ decl ] }
 
     let genFixed (schema : FixedSchema) =
         let typeName = Ident.Create schema.Name
@@ -149,9 +157,7 @@ module rec A =
         let activePattern =
             let valueMatch = SynPat.CreateParen(SynPat.CreateTyped(SynPat.CreateNamed valueIdent, SynType.Create typeName))
             let getValue = SynExpr.MethodCall(valueExpr, Ident.Create "Value")
-
-            SynModuleDecl.CreateLet
-                [ SynBinding.Let(pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
+            SynModuleDecl.CreateLet [ SynBinding.Let(pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
 
         let companionModule =
             SynModuleDecl.CreateNestedModule(
@@ -162,7 +168,8 @@ module rec A =
                 [ activePattern ]
             )
 
-        SynModuleOrNamespace.CreateNamespace(Ident.CreateLong schema.Namespace, decls = [ typeDecl; companionModule ])
+        { Namespace = schema.Namespace
+          Declarations = [ typeDecl; companionModule ] }
 
     let genType (schema : Schema) =
         match schema with
@@ -173,7 +180,18 @@ module rec A =
 module AvroGenerator =
     let GenerateAsync filename =
         let schema = File.ReadAllText filename |> Schema.Parse
-        let ast = A.getSchemasToGenerate schema |> Seq.map A.genType |> List.ofSeq
+
+        let ast =
+            A.getSchemasToGenerate schema
+            |> Seq.map A.genType
+            |> Seq.partitionByConsequentKey (fun x -> x.Namespace)
+            |> Seq.map (fun (ns, xs) ->
+                SynModuleOrNamespace.CreateNamespace(
+                    Ident.CreateLong ns,
+                    decls = List.collect (fun x -> x.Declarations) xs,
+                    isRecursive = true
+                ))
+            |> List.ofSeq
 
         let input =
             ParsedInput.ImplFile(

@@ -7,7 +7,27 @@
         <GenerateProgramFile>false</GenerateProgramFile>
     </PropertyGroup>
 
+    <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
+        <PropertyGroup>
+            <FSharpAvroGen>../../src/FSharp.Avro.Codegen/bin/$(Configuration)/$(TargetFramework)/FSharp.Avro.Codegen.dll</FSharpAvroGen>
+        </PropertyGroup>
+        
+        <ItemGroup>
+            <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc" />
+        </ItemGroup>
+
+        <MakeDir Directories="$(ProjectDir)/generated/" />
+        <Delete Files="generated/*" />
+        
+        <Exec Command="dotnet $(FSharpAvroGen) --schema-file &quot;%(AvroSchemas.Identity)&quot; --output &quot;$(ProjectDir)generated/$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs&quot;" WorkingDirectory="$(ProjectDir)" />
+
+<!--        <ItemGroup>-->
+<!--            <Compile Include="generated/*.fs" />-->
+<!--        </ItemGroup>-->
+    </Target>
+
     <ItemGroup>
+        <Compile Include="generated/*.fs" />
         <Compile Include="Foo.fs" />
         <Compile Include="Tests.fs" />
         <Compile Include="Program.fs" />
@@ -36,5 +56,6 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\FSharp.Avro\FSharp.Avro.fsproj" />
     </ItemGroup>
+
 
 </Project>
