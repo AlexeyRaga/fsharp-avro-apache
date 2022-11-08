@@ -15,24 +15,6 @@ type GeneratedCode =
       Declarations : SynModuleDecl list }
 
 module rec A =
-    let getSchemasToGenerate (schema : Schema) =
-        let schemas = ResizeArray<Schema>()
-
-        let rec loop (sch : Schema) =
-            match sch with
-            | :? FixedSchema -> schemas.Add sch
-            | :? ArraySchema as s -> loop s.ItemSchema
-            | :? MapSchema as s -> loop s.ValueSchema
-            | :? EnumSchema -> schemas.Add sch
-            | :? RecordSchema as s ->
-                s.Fields |> Seq.iter (fun x -> loop x.Schema)
-                schemas.Add s
-            | :? UnionSchema as s -> s.Schemas |> Seq.iter loop
-            | _ -> ()
-
-        loop schema
-        schemas.ToArray()
-
     let genRecord (schema : RecordSchema) =
         let typeName = Ident.Create schema.Name
 
@@ -67,15 +49,15 @@ module rec A =
 
             SynMemberDefn.StaticMember(Ident.Create "FromInt", expr, [ typedVal ], access = SynAccess.Internal(range0))
 
-        let toInt =
+        let toName =
             let expr =
                 let cases =
                     schema.Symbols
-                    |> Seq.mapi (fun ix case -> SynMatchClause.Create(SynPat.CreateNamed $"{schema.Fullname}.{case}", SynExpr.Int32 ix))
+                    |> Seq.map (fun case -> SynMatchClause.Create(SynPat.CreateNamed $"{schema.Fullname}.{case}", SynExpr.String case))
 
                 SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
 
-            SynMemberDefn.StaticMember(Ident.Create "ToInt", expr, [ valuePat ], access = SynAccess.Internal(range0))
+            SynMemberDefn.StaticMember(Ident.Create "ToName", expr, [ valuePat ], access = SynAccess.Internal(range0))
 
         let cases = schema.Symbols |> Seq.map (Ident.Create >> SynUnionCase.Create) |> List.ofSeq
 
@@ -83,8 +65,8 @@ module rec A =
             SynTypeDefn.CreateUnion(
                 Ident.Create schema.Name,
                 cases,
-                [ schemaMember schema; fromInt; toInt ],
-                attributes = [ SynAttributeList.Create(SynAttribute.RequireQualifiedAccess) ]
+                [ schemaStaticMember schema; fromInt; toName ],
+                attributes = [ SynAttributeList.Create [ SynAttribute.RequireQualifiedAccess; SynAttribute.Struct ] ]
             )
 
         let decl = SynModuleDecl.CreateType(enumType)
@@ -114,13 +96,20 @@ module rec A =
 
         let ctorDo =
             let baseValue = SynExpr.Create([ baseIdent; Ident.Create "Value" ])
-            SynMemberDefn.CreateLetBinding(SynBinding.Let(kind = SynBindingKind.Do, expr = SynExpr.Set(baseValue, valueExpr, range0)))
+
+            let setProp =
+                SynExpr.CreateIfThenElse(
+                    SynExpr.Condition(valueExpr, SynExpr.OpInequality, SynExpr.CreateNull),
+                    SynExpr.Set(baseValue, valueExpr, range0)
+                )
+
+            SynMemberDefn.CreateLetBinding(SynBinding.Let(kind = SynBindingKind.Do, expr = setProp))
 
         let propSchema =
             SynMemberDefn.InstanceMember(
                 thisIdent,
                 Ident.Create "Schema",
-                SynExpr.CreateApp(SynExpr.Create "Avro.Schema.Parse", SynExpr.CreateParen(SynExpr.Create($"{typeName.idText}.SCHEMA"))),
+                SynExpr.Create [ typeName; schemaStaticMemberIdent ],
                 isOverride = true
             )
 
@@ -148,7 +137,7 @@ module rec A =
                       ctorDo
                       unsafeCtor
                       propSchema
-                      schemaMember schema
+                      schemaStaticMember schema
                       smartCtor ]
             )
 
@@ -182,7 +171,7 @@ module AvroGenerator =
         let schema = File.ReadAllText filename |> Schema.Parse
 
         let ast =
-            A.getSchemasToGenerate schema
+            findAllSchemas schema
             |> Seq.map A.genType
             |> Seq.partitionByConsequentKey (fun x -> x.Namespace)
             |> Seq.map (fun (ns, xs) ->

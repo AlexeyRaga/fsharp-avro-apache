@@ -40,6 +40,10 @@ type SynType with
         let typeName = if isPostfix then "list" else "List"
         SynType.CreateApp(SynType.Create typeName, [ itemType ], isPostfix = isPostfix)
 
+    static member Seq(itemType : SynType, ?isPostfix : bool) =
+        SynType.CreateApp(SynType.Create "seq", [ itemType ], ?isPostfix = isPostfix)
+
+
     static member Dictionary(key, value) =
         SynType.CreateApp(SynType.Create "System.Collections.Generic.Dictionary", [ key; value ])
 

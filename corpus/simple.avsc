@@ -4,7 +4,7 @@
   "name": "TestMessage",
   "fields": [
     { "name": "id", "type": { "type": "string", "logicalType": "uuid" } },
-    { "name": "num",  "type": ["int"] },
+    { "name": "num",  "type": "int" },
     { "name": "array", "type": { "type": "array", "items":  "string" } },
     { "name": "optional_num",  "type": ["null", "int"] },
     { "name": "str", "type": "string" },
@@ -20,6 +20,18 @@
       "type": {
         "type": "enum", "name": "Suit", "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
       }
-    }
+    },
+    { "name": "owner",
+      "type": {
+        "type": "record",
+        "name": "Person",
+        "fields": [
+          { "name": "name", "type": "string" },
+          { "name": "age", "type": "int" }
+        ]
+      }
+    },
+    { "name": "contact", "type": ["null", "Person"] },
+    { "name": "supervisor", "type": ["null", "string", "Person"] }
   ]
 }

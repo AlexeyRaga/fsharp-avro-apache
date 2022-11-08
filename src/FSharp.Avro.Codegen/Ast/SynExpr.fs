@@ -55,9 +55,21 @@ type SynExpr with
         let ident = SynLongIdent([ Ident.Create "op_Equality" ], [], [ Some(IdentTrivia.OriginalNotation("=")) ])
         SynExpr.Create(ident)
 
+    static member OpInequality =
+        let ident = SynLongIdent([ Ident.Create "op_Inequality" ], [], [ Some(IdentTrivia.OriginalNotation("<>")) ])
+        SynExpr.Create(ident)
+
     static member OpBooleanAnd =
         let ident = SynLongIdent([ Ident.Create "op_BooleanAnd" ], [], [ Some(IdentTrivia.OriginalNotation("&&")) ])
         SynExpr.Create(ident)
+
+    static member CreateIfThenElse(ifExpr : SynExpr, thenExpr : SynExpr, ?elseExpr : SynExpr ) =
+        let trivia = { IfKeyword = range0
+                       ElseKeyword = Some range0
+                       IsElif = false
+                       ThenKeyword = range0
+                       IfToThenRange = range0 }
+        SynExpr.IfThenElse(ifExpr, thenExpr, elseExpr, DebugPointAtBinding.Yes(range0), false, range0, trivia)
 
     static member CreateAndAll(exprs : SynExpr list) =
         match exprs with

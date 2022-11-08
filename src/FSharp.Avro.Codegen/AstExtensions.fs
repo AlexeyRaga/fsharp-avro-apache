@@ -19,9 +19,17 @@ type SynPat with
     static member Int32(value : int) =
         SynPat.CreateConst(SynConst.Int32 value)
 
+    static member String(value : string) =
+        SynPat.CreateConst(SynConst.CreateString value)
+
 type SynExpr with
+    static member IsNull(value : SynExpr) =
+        SynExpr.Condition(SynExpr.Boxed value, SynExpr.OpEquality, SynExpr.CreateNull)
     static member Int32(value : int) =
         SynExpr.CreateConst(SynConst.Int32 value)
+
+    static member String(value : string) =
+        SynExpr.CreateConst(SynConst.CreateString value)
 
     static member Box = SynExpr.Create "box"
     static member Boxed(expr : SynExpr) = SynExpr.CreateApp(SynExpr.Box, expr)

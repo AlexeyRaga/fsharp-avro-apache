@@ -20,7 +20,7 @@ module Output =
 
 type CLIArguments =
     | [<Unique>] Schema_File of file:string
-    | [<Unique; EqualsAssignmentOrSpaced>] Output of file:string
+    | [<Unique>] Output of file:string
     interface IArgParserTemplate with
         member this.Usage =
             match this with

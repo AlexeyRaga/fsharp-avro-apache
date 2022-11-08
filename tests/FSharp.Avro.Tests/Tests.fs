@@ -11,12 +11,10 @@ open FsToolkit.ErrorHandling
 
 let code = """
 
-type A() =
-    static member internal FromInt(value: int) = ()
+let a = 43 <> 1
 
 
 """
-
 
 [<Fact>]
 let ``My test`` () =
@@ -25,8 +23,3 @@ let ``My test`` () =
    match input with
     ParsedInput.ImplFile file ->
         printfn "%A" file
-
-[<Fact>]
-let ``Test`` () =
-    let xs = Map.ofSeq ["a", 1; "b", 2]
-    ()

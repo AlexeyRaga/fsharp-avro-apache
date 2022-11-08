@@ -56,6 +56,8 @@ type SynAttribute with
 
     static member RequireQualifiedAccess = SynAttribute.Create("RequireQualifiedAccess")
     static member Sealed = SynAttribute.Create("Sealed")
+
+    static member Struct = SynAttribute.Create("Struct")
     static member CLIMutable = SynAttribute.Create("CLIMutable")
 
     static member NotForFSharp : SynAttribute =

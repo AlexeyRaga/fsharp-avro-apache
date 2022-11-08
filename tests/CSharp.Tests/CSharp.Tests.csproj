@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Apache.Avro" Version="1.11.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
         <PackageReference Include="xunit" Version="2.4.2" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
@@ -22,7 +23,20 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FSharp.Avro.Tests\FSharp.Avro.Tests.fsproj" />
+      <AvroSchemas Update="..\..\corpus\simple.avsc">
+        <Link>simple.avsc</Link>
+      </AvroSchemas>
     </ItemGroup>
+
+  <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(ProjectDir)/generated/" />
+    <Delete Files="generated/*" />
+
+    <Exec Command="dotnet avrogen -s &quot;%(AvroSchemas.Identity)&quot; &quot;$(ProjectDir)generated/&quot; --namespace Test.AvroMsg:CSharp.AvroMsg" WorkingDirectory="$(ProjectDir)" />
+  </Target>
 
 </Project>

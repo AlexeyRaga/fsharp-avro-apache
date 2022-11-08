@@ -3,8 +3,12 @@ module FSharp.Avro.Codegen.Schema
 open Avro
 open FSharp.Compiler.Syntax
 
-let schemaMember (schema : Schema) =
-    SynMemberDefn.StaticMember(Ident.Create "SCHEMA", SynExpr.CreateConst(SynConst.CreateString(schema.ToString())))
+let schemaStaticMemberIdent = Ident.Create "_SCHEMA"
+let schemaStaticMember (schema : Schema) =
+    let schemaString = SynExpr.CreateConst(SynConst.CreateString(schema.ToString()))
+    let parsedSchema = SynExpr.CreateApp(SynExpr.Create "Avro.Schema.Parse", SynExpr.CreateParen schemaString)
+    SynMemberDefn.StaticMember(schemaStaticMemberIdent, parsedSchema)
+
 let nullSchema = PrimitiveSchema.Create(Schema.Type.Null) :> Schema
 
 let (|UnionSingleOptional|UnionCases|UnionOptionalCases|UnionSingle|UnionEmpty|) (schema : UnionSchema) =
@@ -24,6 +28,25 @@ let (|UnionSingleOptional|UnionCases|UnionOptionalCases|UnionSingle|UnionEmpty|)
     | true, [] -> UnionSingleOptional(0, nullSchema)
     | true, [ x ] -> UnionSingleOptional x
     | true, xs -> UnionOptionalCases xs
+
+let findAllSchemas (schema : Schema) =
+    let schemas = ResizeArray<Schema>()
+
+    let rec loop (sch : Schema) =
+        match sch with
+        | :? FixedSchema -> schemas.Add sch
+        | :? ArraySchema as s -> loop s.ItemSchema
+        | :? MapSchema as s -> loop s.ValueSchema
+        | :? EnumSchema -> schemas.Add sch
+        | :? RecordSchema as s ->
+            s.Fields |> Seq.iter (fun x -> loop x.Schema)
+            schemas.Add s
+        | :? UnionSchema as s -> s.Schemas |> Seq.iter loop
+        | _ -> ()
+
+    loop schema
+
+    schemas |> Seq.distinct |> Array.ofSeq
 
 
 let rec primSchemaType (schema : PrimitiveSchema) =
