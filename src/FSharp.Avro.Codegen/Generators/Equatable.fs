@@ -1,5 +1,5 @@
 [<Microsoft.FSharp.Core.RequireQualifiedAccess>]
-module FSharp.Avro.Codegen.IEquatable
+module FSharp.Avro.Codegen.Generators.IEquatable
 
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
@@ -50,13 +50,13 @@ let implementInterface(thisIdent : Ident, thisType : SynType, props : Ident list
         let equatable = SynMemberDefn.Interface(equatableType, Some range0, Some [ equalsMember ], range0)
 
         let getHashCode =
-            let vals =
+            let values =
                 props
                 |> List.map (thisMember >> SynExpr.Create)
                 |> SynExpr.CreateTuple
                 |> SynExpr.CreateParen
 
-            let expr = SynExpr.MethodCall(SynLongIdent.Create "hash", vals)
+            let expr = SynExpr.MethodCall(SynLongIdent.Create "hash", values)
             SynMemberDefn.InstanceMember(thisIdent, Ident.Create "GetHashCode", expr, [], isOverride = true)
 
         [ equatable; objectEquals; getHashCode ]

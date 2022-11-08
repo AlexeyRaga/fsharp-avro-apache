@@ -1,7 +1,6 @@
 [<Microsoft.FSharp.Core.AutoOpen>]
 module FSharp.Avro.Codegen.AstExtensions
 
-open Avro
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml

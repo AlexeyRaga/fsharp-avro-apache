@@ -13,6 +13,21 @@ type RecordField =
       propertyId : Ident
       typ : SynType }
 
+module RecordField =
+    let ofField (fld : Field) =
+        let typ = schemaType fld.Schema
+        let fid = Ident.Prefixed("__", Ident.Create(fld.Name))
+        let pid = Ident.Create(fld.Name)
+
+        { field = fld
+          privateFieldId = fid
+          propertyId = pid
+          typ = typ }
+
+type RecordRepresentation =
+    | Record
+    | Class
+
 [<RequireQualifiedAccess>]
 module ISpecificRecord =
     let private choice (n : int) (ofN : int) (expr : SynExpr) = SynExpr.Choice(n, ofN, expr)
@@ -26,10 +41,6 @@ module ISpecificRecord =
     let private castPat fld typ =
         let isType = SynPat.CreateParen(SynPat.CreateAs(SynPat.CreateIsInst typ, SynPat.CreateNamed "x"))
         SynPat.CreateTuple [ SynPat.CreateConst(SynConst.Int32 fld.field.Pos); isType ]
-
-    let directFieldSetter (target : RecordField) (value : SynExpr) =
-        let target = SynExpr.Create target.privateFieldId
-        SynExpr.Set(target, value, range0)
 
     let reflectionPropertySetter (target : RecordField) (value : SynExpr) =
         let propName = SynExpr.CreateConst(SynConst.CreateString target.propertyId.idText)
@@ -196,12 +207,15 @@ module SpecificRecord =
         let defaultCtor = SynMemberDefn.DefaultCtor(fields |> List.map (fun x -> (x.propertyId, x.typ)))
         let unsafeCtor = SynMemberDefn.UnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
 
+        let directFieldSetter (target : RecordField) (value : SynExpr) =
+            SynExpr.Set(SynExpr.Create target.privateFieldId, value, range0)
+
         let privateFields, props =
             fields
             |> List.map (fun x -> SynMemberDefn.GetterForField(thisIdent, x.typ, x.privateFieldId, x.propertyId))
             |> List.unzip
 
-        let specRec = ISpecificRecord.implementInterface thisIdent typeName fields ISpecificRecord.directFieldSetter
+        let specRec = ISpecificRecord.implementInterface thisIdent typeName fields directFieldSetter
 
         let equatable =
             IEquatable.implementInterface (thisIdent, SynType.Create typeName, fields |> List.map (fun x -> x.propertyId))
@@ -229,3 +243,17 @@ module SpecificRecord =
             attributes = [ SynAttributeList.Create [ SynAttribute.CLIMutable ] ],
             members = [ specRec; schemaStaticMember schema ]
         )
+
+    let genSpecificRecord (repr : RecordRepresentation) (schema : RecordSchema) =
+        let typeName = Ident.Create schema.Name
+
+        let generator =
+            match repr with
+            | Record -> createRecord
+            | Class -> createClass
+
+        let typ = schema.Fields |> Seq.map RecordField.ofField |> List.ofSeq |> generator typeName schema
+        let decl = SynModuleDecl.Types([ typ ], range0)
+
+        { Namespace = schema.Namespace
+          Declarations = [ decl ] }
