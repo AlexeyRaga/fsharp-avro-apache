@@ -13,6 +13,9 @@ namespace CSharp.AvroMsg
 	using global::Avro;
 	using global::Avro.Specific;
 	
+	/// <summary>
+	/// Your usual card deck suit
+	/// </summary>
 	[global::System.CodeDom.Compiler.GeneratedCodeAttribute("avrogen", "1.11.1")]
 	public enum Suit
 	{

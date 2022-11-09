@@ -3,6 +3,7 @@ namespace FSharp.Avro.Codegen.Generators
 open Avro
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
+open FSharp.Compiler.Xml
 open Microsoft.FSharp.Core
 open FSharp.Avro.Codegen
 open FSharp.Avro.Codegen.Schema
@@ -74,7 +75,7 @@ module ISpecificRecord =
         SynMatchClause.Create(pattern, expr)
 
     let implementInterface (thisIdent : Ident) (typeName : Ident) (fields : RecordField list) (setter : RecordField -> SynExpr -> SynExpr) =
-        let methodAttrs = [ SynAttributeList.Create [ SynAttribute.NotForFSharp ] ]
+        let methodAttrs = [ SynAttributeList.Create [ SynAttribute.NotForFSharp() ] ]
 
         let methodGet =
             let parameters = [ SynPat.CreateTyped("pos", SynType.Int) ]
@@ -83,7 +84,7 @@ module ISpecificRecord =
                 match fld.field.Schema with
                 | :? EnumSchema as s ->
                     let convert value =
-                        SynExpr.MethodCall(SynExpr.Create s.Fullname, Ident.Create "ToName", args = value) |-> SynExpr.Box
+                        SynExpr.MethodCall(SynExpr.Create s.Fullname, SpecificEnum.toAvroIdent, args = value) |-> SynExpr.Box
 
                     [ getterMatchCase fld convert ]
                 | :? MapSchema ->
@@ -153,7 +154,7 @@ module ISpecificRecord =
                 | :? RecordSchema -> [ setCastedValue setter fld ]
                 | :? EnumSchema as s ->
                     let convert value =
-                        SynExpr.MethodCall(SynExpr.Create s.Fullname, Ident.Create "FromInt", args = value)
+                        SynExpr.MethodCall(SynExpr.Create s.Fullname, SpecificEnum.fromAvroIdent, args = value)
 
                     [ setMatching SynType.Int convert ]
                 | :? ArraySchema as s ->
@@ -203,7 +204,7 @@ module ISpecificRecord =
         )
 
 module SpecificRecord =
-    let createClass (typeName : Ident) (schema : Schema) (fields : RecordField list) =
+    let createClass (typeName : Ident) (schema : RecordSchema) (fields : RecordField list) =
         let defaultCtor = SynMemberDefn.DefaultCtor(fields |> List.map (fun x -> (x.propertyId, x.typ)))
         let unsafeCtor = SynMemberDefn.UnsafeCtor(typeName, fields |> List.map (fun x -> x.typ))
 
@@ -212,7 +213,14 @@ module SpecificRecord =
 
         let privateFields, props =
             fields
-            |> List.map (fun x -> SynMemberDefn.GetterForField(thisIdent, x.typ, x.privateFieldId, x.propertyId))
+            |> List.map (fun x ->
+                SynMemberDefn.GetterForField(
+                    thisIdent,
+                    x.typ,
+                    x.privateFieldId,
+                    x.propertyId,
+                    xmldoc = PreXmlDoc.Create x.field.Documentation
+                ))
             |> List.unzip
 
         let specRec = ISpecificRecord.implementInterface thisIdent typeName fields directFieldSetter
@@ -230,18 +238,20 @@ module SpecificRecord =
                   yield schemaStaticMember schema
                   yield specRec
                   yield! equatable ],
-            attributes = [ SynAttributeList.Create(SynAttribute.Sealed) ]
+            attributes = [ SynAttributeList.Create(SynAttribute.Sealed) ],
+            xmldoc = PreXmlDoc.Create schema.Documentation
         )
 
-    let createRecord (typeName : Ident) (schema : Schema) (fields : RecordField list) =
-        let recordFields = fields |> Seq.map (fun x -> SynField.Create(x.typ, x.propertyId))
+    let createRecord (typeName : Ident) (schema : RecordSchema) (fields : RecordField list) =
+        let recordFields = fields |> Seq.map (fun x -> SynField.Create(x.typ, x.propertyId, xmldoc = PreXmlDoc.Create x.field.Documentation))
         let specRec = ISpecificRecord.implementInterface thisIdent typeName fields ISpecificRecord.reflectionPropertySetter
 
         SynTypeDefn.CreateRecord(
             typeName,
             recordFields,
             attributes = [ SynAttributeList.Create [ SynAttribute.CLIMutable ] ],
-            members = [ specRec; schemaStaticMember schema ]
+            members = [ specRec; schemaStaticMember schema ],
+            xmldoc = PreXmlDoc.Create schema.Documentation
         )
 
     let genSpecificRecord (repr : RecordRepresentation) (schema : RecordSchema) =

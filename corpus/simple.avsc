@@ -13,15 +13,19 @@
     { "name": "map", "type": { "type": "map", "values": "boolean" } },
     {
       "name": "md5",
-      "type": {"type": "fixed", "size": 16, "name": "MD5"}
+      "type": {"type": "fixed", "size": 16, "name": "MD5", "doc": "MD5 Hash sum"}
     },
     {
       "name": "suit",
       "type": {
-        "type": "enum", "name": "Suit", "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
+        "type": "enum",
+        "name": "Suit",
+        "doc": "Your usual card deck suit",
+        "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
       }
     },
     { "name": "owner",
+      "doc": "Who owns this thing anyway?!",
       "type": {
         "type": "record",
         "name": "Person",

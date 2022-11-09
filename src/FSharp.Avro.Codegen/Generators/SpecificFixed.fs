@@ -4,6 +4,7 @@ open Avro
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open FSharp.Avro.Codegen
+open FSharp.Compiler.Xml
 
 let genSpecificFixed (schema : FixedSchema) =
     let typeName = Ident.Create schema.Name
@@ -29,10 +30,7 @@ let genSpecificFixed (schema : FixedSchema) =
             SynBinding.Let(
                 kind = SynBindingKind.Do,
                 expr =
-                    SynExpr.CreateIfThenElse(
-                        SynExpr.Inequality(valueExpr, SynExpr.CreateNull),
-                        SynExpr.Set(baseValue, valueExpr, range0)
-                    )
+                    SynExpr.CreateIfThenElse(SynExpr.Inequality(valueExpr, SynExpr.CreateNull), SynExpr.Set(baseValue, valueExpr, range0))
             )
         )
 
@@ -56,7 +54,8 @@ let genSpecificFixed (schema : FixedSchema) =
         SynMemberDefn.StaticMember(
             Ident.Create "Create",
             SynExpr.CreateMatch(arrayLen, [ okClause; errClause ]),
-            [ SynPat.CreateNamed valueIdent ]
+            [ SynPat.CreateNamed valueIdent ],
+            xmldoc = PreXmlDoc.Create [$"Creates an instance of {typeName.idText}."; $"Only accepts byte arrays of size {schema.Size}." ]
         )
 
     let clazz =
@@ -69,7 +68,8 @@ let genSpecificFixed (schema : FixedSchema) =
                   unsafeCtor
                   propSchema
                   Schema.schemaStaticMember schema
-                  smartCtor ]
+                  smartCtor ],
+            xmldoc = PreXmlDoc.Create(schema.Documentation)
         )
 
     let typeDecl = SynModuleDecl.CreateType clazz
@@ -77,7 +77,13 @@ let genSpecificFixed (schema : FixedSchema) =
     let activePattern =
         let valueMatch = SynPat.CreateParen(SynPat.CreateTyped(valuePat, SynType.Create typeName))
         let getValue = SynExpr.MethodCall(valueExpr, valuePropIdent)
-        SynModuleDecl.CreateLet [ SynBinding.Let(pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]), expr = getValue) ]
+
+        SynModuleDecl.CreateLet
+            [ SynBinding.Let(
+                  pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]),
+                  expr = getValue,
+                  xmldoc = PreXmlDoc.Create $"Deconstructs {typeName.idText} by extracting an underlying byte array value"
+              ) ]
 
     let companionModule =
         SynModuleDecl.CreateNestedModule(

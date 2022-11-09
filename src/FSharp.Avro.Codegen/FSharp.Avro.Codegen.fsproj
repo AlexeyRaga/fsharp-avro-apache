@@ -23,14 +23,15 @@
         <Compile Include="Ast\SynMemberDefn.fs" />
         <Compile Include="Ast\SynMatchClause.fs" />
         <Compile Include="Ast\SynModuleDecl.fs" />
+        <Compile Include="Ast\PreXmlDoc.fs" />
         <Compile Include="Prelude.fs" />
         <Compile Include="Schema.fs" />
         <Compile Include="AstExtensions.fs" />
         <Compile Include="Generators\Namespaced.fs" />
         <Compile Include="Generators\Equatable.fs" />
-        <Compile Include="Generators\SpecificRecord.fs" />
-        <Compile Include="Generators\SpecificFixed.fs" />
         <Compile Include="Generators\SpecificEnum.fs" />
+        <Compile Include="Generators\SpecificFixed.fs" />
+        <Compile Include="Generators\SpecificRecord.fs" />
         <Compile Include="Generator.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>

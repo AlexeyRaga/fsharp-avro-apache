@@ -24,6 +24,7 @@ type SynPat with
 type SynExpr with
     static member IsNull(value : SynExpr) =
         SynExpr.Condition(SynExpr.Boxed value, SynExpr.OpEquality, SynExpr.CreateNull)
+
     static member Int32(value : int) =
         SynExpr.CreateConst(SynConst.Int32 value)
 
@@ -96,12 +97,12 @@ type SynMemberDefn with
                 SynMemberFlags.Create(SynMemberKind.Constructor),
                 SynPat.Create("new", [ SynPat.CreateUnit ]),
                 callCtor,
-                attributes = [ SynAttributeList.Create SynAttribute.NotForFSharp ]
+                attributes = [ SynAttributeList.Create [ SynAttribute.NotForFSharp() ] ]
             ),
             range0
         )
 
-    static member GetterForField(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident) =
+    static member GetterForField(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident, ?xmldoc : PreXmlDoc) =
         let fld = SynMemberDefn.Let(isMutable = true, pattern = SynPat.CreateNamed fieldIdent, expr = SynExpr.Create propIdent)
-        let prop = SynMemberDefn.InstanceMember(thisIdent, propIdent, SynExpr.Create fieldIdent)
+        let prop = SynMemberDefn.InstanceMember(thisIdent, propIdent, SynExpr.Create fieldIdent, ?xmldoc = xmldoc)
         fld, prop

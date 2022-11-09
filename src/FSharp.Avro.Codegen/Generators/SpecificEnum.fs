@@ -4,6 +4,10 @@ open Avro
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open FSharp.Avro.Codegen
+open FSharp.Compiler.Xml
+
+let fromAvroIdent = Ident.Create "FromAvroEnumValue"
+let toAvroIdent = Ident.Create "ToAvroEnumValue"
 
 let genSpecificEnum (schema : EnumSchema) =
     let fromInt =
@@ -17,7 +21,16 @@ let genSpecificEnum (schema : EnumSchema) =
 
             SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
 
-        SynMemberDefn.StaticMember(Ident.Create "FromInt", expr, [ typedVal ], access = SynAccess.Internal(range0))
+        SynMemberDefn.StaticMember(
+            fromAvroIdent,
+            expr,
+            [ typedVal ],
+            access = SynAccess.Internal(range0),
+            xmldoc =
+                PreXmlDoc.Create
+                    [ "Only used in Avro serialisation."
+                      "Is not intended to be used by in users code." ]
+        )
 
     let toName =
         let expr =
@@ -27,7 +40,16 @@ let genSpecificEnum (schema : EnumSchema) =
 
             SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
 
-        SynMemberDefn.StaticMember(Ident.Create "ToName", expr, [ valuePat ], access = SynAccess.Internal(range0))
+        SynMemberDefn.StaticMember(
+            toAvroIdent,
+            expr,
+            [ valuePat ],
+            access = SynAccess.Internal(range0),
+            xmldoc =
+                PreXmlDoc.Create
+                    [ "Only used in Avro serialisation."
+                      "Is not intended to be used by in users code." ]
+        )
 
     let cases = schema.Symbols |> Seq.map (Ident.Create >> SynUnionCase.Create) |> List.ofSeq
 
@@ -36,7 +58,8 @@ let genSpecificEnum (schema : EnumSchema) =
             Ident.Create schema.Name,
             cases,
             [ Schema.schemaStaticMember schema; fromInt; toName ],
-            attributes = [ SynAttributeList.Create [ SynAttribute.RequireQualifiedAccess; SynAttribute.Struct ] ]
+            attributes = [ SynAttributeList.Create [ SynAttribute.RequireQualifiedAccess; SynAttribute.Struct ] ],
+            ?xmldoc = Some(PreXmlDoc.Create(schema.Documentation))
         )
 
     let decl = SynModuleDecl.CreateType(enumType)

@@ -60,11 +60,12 @@ type SynAttribute with
     static member Struct = SynAttribute.Create("Struct")
     static member CLIMutable = SynAttribute.Create("CLIMutable")
 
-    static member NotForFSharp : SynAttribute =
+    static member NotForFSharp(?isError : bool) : SynAttribute =
+        let isError = defaultArg isError true
         let args = [
             SynExpr.CreateConst (SynConst.CreateString("This method is not intended for use from F#."))
             SynExpr.CreateConst(SynConst.Int32(10001))
-            SynExpr.Condition(SynExpr.Create "IsError", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
+            SynExpr.Condition(SynExpr.Create "IsError", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool isError))
             SynExpr.Condition(SynExpr.Create "IsHidden", SynExpr.OpEquality, SynExpr.CreateConst (SynConst.Bool true))
         ]
         { AppliesToGetterAndSetter = false

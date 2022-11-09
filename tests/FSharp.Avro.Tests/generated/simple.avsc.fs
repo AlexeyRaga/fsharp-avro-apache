@@ -1,5 +1,6 @@
 namespace rec Test.AvroMsg
 
+///MD5 Hash sum
 type MD5 private (value: byte[]) =
     class
         inherit Avro.Specific.SpecificFixed(uint 16)
@@ -14,8 +15,12 @@ type MD5 private (value: byte[]) =
         override this.Schema = MD5._SCHEMA
 
         static member _SCHEMA =
-            Avro.Schema.Parse("{\"type\":\"fixed\",\"name\":\"MD5\",\"namespace\":\"Test.AvroMsg\",\"size\":16}")
+            Avro.Schema.Parse(
+                "{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"Test.AvroMsg\",\"size\":16}"
+            )
 
+        ///Creates an instance of MD5.
+        ///Only accepts byte arrays of size 16.
         static member Create(value) =
             match Array.length value with
             | 16 -> Ok(MD5 value)
@@ -24,8 +29,10 @@ type MD5 private (value: byte[]) =
 
 [<AutoOpen>]
 module MD5 =
+    ///Deconstructs MD5 by extracting an underlying byte array value
     let (|MD5|) (value: MD5) = value.Value
 
+///Your usual card deck suit
 [<RequireQualifiedAccess; Struct>]
 type Suit =
     | SPADES
@@ -35,10 +42,12 @@ type Suit =
 
     static member _SCHEMA =
         Avro.Schema.Parse(
-            "{\"type\":\"enum\",\"name\":\"Suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}"
+            "{\"type\":\"enum\",\"name\":\"Suit\",\"doc\":\"Your usual card deck suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}"
         )
 
-    static member internal FromInt(value: int) =
+    ///Only used in Avro serialisation.
+    ///Is not intended to be used by in users code.
+    static member internal FromAvroEnumValue(value: int) =
         match value with
         | 0 -> Test.AvroMsg.Suit.SPADES
         | 1 -> Test.AvroMsg.Suit.HEARTS
@@ -46,7 +55,9 @@ type Suit =
         | 3 -> Test.AvroMsg.Suit.CLUBS
         | _ -> failwith "Invalid value for enum Test.AvroMsg.Suit"
 
-    static member internal ToName(value) =
+    ///Only used in Avro serialisation.
+    ///Is not intended to be used by in users code.
+    static member internal ToAvroEnumValue(value) =
         match value with
         | Test.AvroMsg.Suit.SPADES -> "SPADES"
         | Test.AvroMsg.Suit.HEARTS -> "HEARTS"
@@ -80,19 +91,22 @@ type Person =
 
 [<CLIMutable>]
 type TestMessage =
-    { id: System.Guid
-      num: int
-      array: string[]
-      optional_num: int option
-      str: string
-      choice: Choice<string, int, bool>
-      optional_choice: Choice<string, int, bool> option
-      map: Map<string, bool>
-      md5: Test.AvroMsg.MD5
-      suit: Test.AvroMsg.Suit
-      owner: Test.AvroMsg.Person
-      contact: Test.AvroMsg.Person option
-      supervisor: Choice<string, Test.AvroMsg.Person> option }
+    {
+        id: System.Guid
+        num: int
+        array: string[]
+        optional_num: int option
+        str: string
+        choice: Choice<string, int, bool>
+        optional_choice: Choice<string, int, bool> option
+        map: Map<string, bool>
+        md5: Test.AvroMsg.MD5
+        suit: Test.AvroMsg.Suit
+        ///Who owns this thing anyway?!
+        owner: Test.AvroMsg.Person
+        contact: Test.AvroMsg.Person option
+        supervisor: Choice<string, Test.AvroMsg.Person> option
+    }
 
     interface Avro.Specific.ISpecificRecord with
         [<CompilerMessage("This method is not intended for use from F#.", 10001, IsError = true, IsHidden = true)>]
@@ -119,7 +133,7 @@ type TestMessage =
             | 7 when box this.map = null -> null
             | 7 -> this.map |> Map.toSeq |> dict |> System.Collections.Generic.Dictionary |> box
             | 8 -> box this.md5
-            | 9 -> Test.AvroMsg.Suit.ToName this.suit |> box
+            | 9 -> Test.AvroMsg.Suit.ToAvroEnumValue this.suit |> box
             | 10 -> box this.owner
             | 11 -> this.contact |> Option.map box |> Option.defaultValue null
             | 12 ->
@@ -171,7 +185,9 @@ type TestMessage =
             | 8, (:? Test.AvroMsg.MD5 as x) ->
                 this.GetType().GetProperty("md5").SetMethod.Invoke (this, [| x |]) |> ignore
             | 9, (:? int as x) ->
-                this.GetType().GetProperty("suit").SetMethod.Invoke (this, [| Test.AvroMsg.Suit.FromInt x |]) |> ignore
+                this.GetType().GetProperty("suit").SetMethod.Invoke
+                    (this, [| Test.AvroMsg.Suit.FromAvroEnumValue x |])
+                    |> ignore
             | 10, (:? Test.AvroMsg.Person as x) ->
                 this.GetType().GetProperty("owner").SetMethod.Invoke (this, [| x |]) |> ignore
             | 11, (:? Test.AvroMsg.Person as x) ->
@@ -191,5 +207,5 @@ type TestMessage =
 
     static member _SCHEMA =
         Avro.Schema.Parse(
-            "{\"type\":\"record\",\"name\":\"TestMessage\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"id\",\"type\":{\"type\":\"string\",\"logicalType\":\"uuid\"}},{\"name\":\"num\",\"type\":\"int\"},{\"name\":\"array\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"optional_num\",\"type\":[\"null\",\"int\"]},{\"name\":\"str\",\"type\":\"string\"},{\"name\":\"choice\",\"type\":[\"string\",\"int\",\"boolean\"]},{\"name\":\"optional_choice\",\"type\":[\"null\",\"string\",\"int\",\"boolean\"]},{\"name\":\"map\",\"type\":{\"type\":\"map\",\"values\":\"boolean\"}},{\"name\":\"md5\",\"type\":{\"type\":\"fixed\",\"name\":\"MD5\",\"namespace\":\"Test.AvroMsg\",\"size\":16}},{\"name\":\"suit\",\"type\":{\"type\":\"enum\",\"name\":\"Suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}},{\"name\":\"owner\",\"type\":{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}},{\"name\":\"contact\",\"type\":[\"null\",\"Person\"]},{\"name\":\"supervisor\",\"type\":[\"null\",\"string\",\"Person\"]}]}"
+            "{\"type\":\"record\",\"name\":\"TestMessage\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"id\",\"type\":{\"type\":\"string\",\"logicalType\":\"uuid\"}},{\"name\":\"num\",\"type\":\"int\"},{\"name\":\"array\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"optional_num\",\"type\":[\"null\",\"int\"]},{\"name\":\"str\",\"type\":\"string\"},{\"name\":\"choice\",\"type\":[\"string\",\"int\",\"boolean\"]},{\"name\":\"optional_choice\",\"type\":[\"null\",\"string\",\"int\",\"boolean\"]},{\"name\":\"map\",\"type\":{\"type\":\"map\",\"values\":\"boolean\"}},{\"name\":\"md5\",\"type\":{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"Test.AvroMsg\",\"size\":16}},{\"name\":\"suit\",\"type\":{\"type\":\"enum\",\"name\":\"Suit\",\"doc\":\"Your usual card deck suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}},{\"name\":\"owner\",\"doc\":\"Who owns this thing anyway?!\",\"type\":{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}},{\"name\":\"contact\",\"type\":[\"null\",\"Person\"]},{\"name\":\"supervisor\",\"type\":[\"null\",\"string\",\"Person\"]}]}"
         )
