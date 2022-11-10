@@ -2,11 +2,10 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <OutputType>Exe</OutputType>
+        <RootNamespace>FSharp.Avro.Bench</RootNamespace>
     </PropertyGroup>
     <PropertyGroup>
         <PlatformTarget>AnyCPU</PlatformTarget>
-<!--        <DebugType>pdbonly</DebugType>-->
-<!--        <DebugSymbols>true</DebugSymbols>-->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Optimize>true</Optimize>
         <Configuration>Release</Configuration>
@@ -21,11 +20,13 @@
         <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.12.1" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Corpus\AvroRecord.fs" />
-        <Compile Include="Corpus\AvroRecordClass.fs" />
         <Compile Include="Benchmarks.fs" />
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Program.fs" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj" />
+      <ProjectReference Include="..\..\src\FSharp.Avro.Apache.Contract\FSharp.Avro.Apache.Contract.fsproj" />
     </ItemGroup>
 </Project>

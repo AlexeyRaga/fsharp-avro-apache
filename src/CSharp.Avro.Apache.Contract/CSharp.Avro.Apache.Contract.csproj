@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\corpus\simple.avsc">
+      <Link>simple.avsc</Link>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apache.Avro" Version="1.11.1" />
+  </ItemGroup>
+
+  <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(ProjectDir)/generated/" />
+    <Delete Files="generated/*" />
+
+    <Exec Command="dotnet avrogen -s &quot;%(AvroSchemas.Identity)&quot; &quot;$(ProjectDir)generated/&quot; --namespace Test.AvroMsg:CSharp.AvroMsg" WorkingDirectory="$(ProjectDir)" />
+  </Target>
+
+
+</Project>

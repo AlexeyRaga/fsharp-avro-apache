@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="..\..\corpus\simple.avsc">
+            <Link>simple.avsc</Link>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Apache.Avro" Version="1.11.1"/>
+    </ItemGroup>
+
+    <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
+        <PropertyGroup>
+            <RecordRepresentation>class</RecordRepresentation>
+            <FSharpAvroGen>../FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/FSharp.Avro.Apache.Codegen.dll</FSharpAvroGen>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc"/>
+        </ItemGroup>
+
+        <MakeDir Directories="$(ProjectDir)/generated/"/>
+        <Delete Files="generated/*"/>
+
+        <Exec Command="dotnet $(FSharpAvroGen) --record-repr $(RecordRepresentation) --schema-file &quot;%(AvroSchemas.Identity)&quot; --output &quot;$(ProjectDir)generated/$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs&quot;" WorkingDirectory="$(ProjectDir)"/>
+    </Target>
+
+    <ItemGroup>
+        <Compile Include="generated/*.fs" />
+    </ItemGroup>
+
+</Project>

@@ -16,7 +16,7 @@ namespace CSharp.AvroMsg
 	[global::System.CodeDom.Compiler.GeneratedCodeAttribute("avrogen", "1.11.1")]
 	public partial class TestMessage : global::Avro.Specific.ISpecificRecord
 	{
-		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse(@"{""type"":""record"",""name"":""TestMessage"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""id"",""type"":{""type"":""string"",""logicalType"":""uuid""}},{""name"":""num"",""type"":""int""},{""name"":""array"",""type"":{""type"":""array"",""items"":""string""}},{""name"":""optional_num"",""type"":[""null"",""int""]},{""name"":""str"",""type"":""string""},{""name"":""choice"",""type"":[""string"",""int"",""boolean""]},{""name"":""optional_choice"",""type"":[""null"",""string"",""int"",""boolean""]},{""name"":""map"",""type"":{""type"":""map"",""values"":""boolean""}},{""name"":""md5"",""type"":{""type"":""fixed"",""name"":""MD5"",""namespace"":""CSharp.AvroMsg"",""size"":16}},{""name"":""suit"",""type"":{""type"":""enum"",""name"":""Suit"",""doc"":""Your usual card deck suit"",""namespace"":""CSharp.AvroMsg"",""symbols"":[""SPADES"",""HEARTS"",""DIAMONDS"",""CLUBS""]}},{""name"":""owner"",""type"":{""type"":""record"",""name"":""Person"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""name"",""type"":""string""},{""name"":""age"",""type"":""int""}]}},{""name"":""contact"",""type"":[""null"",""Person""]},{""name"":""supervisor"",""type"":[""null"",""string"",""Person""]}]}");
+		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse(@"{""type"":""record"",""name"":""TestMessage"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""id"",""type"":{""type"":""string"",""logicalType"":""uuid""}},{""name"":""num"",""type"":""int""},{""name"":""array"",""type"":{""type"":""array"",""items"":""string""}},{""name"":""optional_num"",""type"":[""null"",""int""]},{""name"":""str"",""type"":""string""},{""name"":""choice"",""type"":[""string"",""int"",""boolean""]},{""name"":""optional_choice"",""type"":[""null"",""string"",""int"",""boolean""]},{""name"":""map"",""type"":{""type"":""map"",""values"":""boolean""}},{""name"":""md5"",""type"":{""type"":""fixed"",""name"":""MD5"",""doc"":""MD5 Hash sum"",""namespace"":""CSharp.AvroMsg"",""size"":16}},{""name"":""suit"",""type"":{""type"":""enum"",""name"":""Suit"",""doc"":""Your usual card deck suit"",""namespace"":""CSharp.AvroMsg"",""symbols"":[""SPADES"",""HEARTS"",""DIAMONDS"",""CLUBS""]}},{""name"":""owner"",""doc"":""Who owns this thing anyway?!"",""type"":{""type"":""record"",""name"":""Person"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""name"",""type"":""string""},{""name"":""age"",""type"":""int""}]}},{""name"":""contact"",""type"":[""null"",""Person""]},{""name"":""supervisor"",""type"":[""null"",""string"",""Person""]}]}");
 		private System.Guid _id;
 		private int _num;
 		private IList<System.String> _array;
@@ -27,6 +27,9 @@ namespace CSharp.AvroMsg
 		private IDictionary<string,System.Boolean> _map;
 		private CSharp.AvroMsg.MD5 _md5;
 		private CSharp.AvroMsg.Suit _suit;
+		/// <summary>
+		/// Who owns this thing anyway?!
+		/// </summary>
 		private CSharp.AvroMsg.Person _owner;
 		private CSharp.AvroMsg.Person _contact;
 		private object _supervisor;
@@ -147,6 +150,9 @@ namespace CSharp.AvroMsg
 				this._suit = value;
 			}
 		}
+		/// <summary>
+		/// Who owns this thing anyway?!
+		/// </summary>
 		public CSharp.AvroMsg.Person owner
 		{
 			get

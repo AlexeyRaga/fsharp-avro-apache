@@ -3,6 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>FSharp.Avro.Codegen</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -34,10 +35,6 @@
         <Compile Include="Generators\SpecificRecord.fs" />
         <Compile Include="Generator.fs" />
         <Compile Include="Program.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\FSharp.Avro\FSharp.Avro.fsproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -9,8 +9,8 @@ let genPerson : Gen<Person> =
     gen {
         let! name = Gen.string (Range.linear 0 255) Gen.unicode
         let! age = Gen.int32 (Range.linearBounded ())
-        // return Person(name, age)
-        return { name = name; age = age }
+        return Person(name, age)
+        // return { name = name; age = age }
     }
 
 let genTestMessage : Gen<TestMessage> =
@@ -35,8 +35,8 @@ let genTestMessage : Gen<TestMessage> =
             |> Gen.option
 
         return
-            // TestMessage(mid, num, array, optNum, str, choice, optChoice, map, md5, suit, owner, contact, Some super)
-            { id = mid; num = num; array = array; optional_num = optNum; str = str; choice = choice; optional_choice = optChoice; map = map; md5 = md5; suit = suit; owner = owner; contact = contact; supervisor = super }
+            TestMessage(mid, num, array, optNum, str, choice, optChoice, map, md5, suit, owner, contact, super)
+            // { id = mid; num = num; array = array; optional_num = optNum; str = str; choice = choice; optional_choice = optChoice; map = map; md5 = md5; suit = suit; owner = owner; contact = contact; supervisor = super }
     }
 
 [<Fact>]
@@ -58,4 +58,4 @@ let ``Should encode and decode as C#`` () =
         let decoded = AvroCodec.decode<TestMessage> TestMessage._SCHEMA csEncoded
         decoded = msg
     }
-    |> Property.recheckBool "0_4700450397287374730_11584491185472260345_"
+    |> Property.checkBool

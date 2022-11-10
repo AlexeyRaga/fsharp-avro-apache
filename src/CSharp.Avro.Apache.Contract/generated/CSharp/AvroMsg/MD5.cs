@@ -13,10 +13,14 @@ namespace CSharp.AvroMsg
 	using global::Avro;
 	using global::Avro.Specific;
 	
+	/// <summary>
+	/// MD5 Hash sum
+	/// </summary>
 	[global::System.CodeDom.Compiler.GeneratedCodeAttribute("avrogen", "1.11.1")]
 	public partial class MD5 : SpecificFixed
 	{
-		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse("{\"type\":\"fixed\",\"name\":\"MD5\",\"namespace\":\"CSharp.AvroMsg\",\"size\":16}");
+		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse("{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"CSharp.AvroMsg\",\"s" +
+				"ize\":16}");
 		private static uint fixedSize = 16;
 		public MD5() : 
 				base(fixedSize)
