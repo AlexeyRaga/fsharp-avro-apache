@@ -24,6 +24,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Program.fs" />
+        <Content Include="Readme.md" />
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\..\src\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj" />
