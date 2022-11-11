@@ -20,9 +20,14 @@
         <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.12.1" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="OptimisedMsg.fs" />
         <Compile Include="Benchmarks.fs" />
+        <Compile Include="Setters\ClassPerson.fs" />
+        <Compile Include="Setters\RecordPerson.fs" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Setters\OptimisedPerson.fs" />
+        <Compile Include="Setters.fs" />
         <Compile Include="Program.fs" />
         <Content Include="Readme.md" />
     </ItemGroup>
