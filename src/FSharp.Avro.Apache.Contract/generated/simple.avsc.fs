@@ -53,7 +53,8 @@ type Suit =
         | 1 -> Test.AvroMsg.Suit.HEARTS
         | 2 -> Test.AvroMsg.Suit.DIAMONDS
         | 3 -> Test.AvroMsg.Suit.CLUBS
-        | _ -> failwith "Invalid value for enum Test.AvroMsg.Suit"
+        | _ ->
+            raise (Avro.AvroRuntimeException("Bad index " + string value + " in Test.AvroMsg.Suit.FromAvroEnumValue"))
 
     ///Only used in Avro serialisation.
     ///Is not intended to be used by in users code.
@@ -87,12 +88,14 @@ type Person(name: string, age: int) =
                 match pos with
                 | 0 -> box this.name
                 | 1 -> box this.age
+                | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
 
             [<CompilerMessage("This method is not intended for use from F#.", 10001, IsError = true, IsHidden = true)>]
             member this.Put(pos: int, value: obj) =
                 match pos, value with
                 | 0, (:? string as x) -> __name <- x
                 | 1, (:? int as x) -> __age <- x
+                | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
 
             member this.Schema = Person._SCHEMA
 
@@ -193,7 +196,6 @@ type TestMessage
                     | Choice1Of3 value -> box value
                     | Choice2Of3 value -> box value
                     | Choice3Of3 value -> box value
-                    | _ -> null
                 | 6 ->
                     match this.optional_choice with
                     | Some (Choice1Of3 value) -> box value
@@ -211,6 +213,7 @@ type TestMessage
                     | Some (Choice1Of2 value) -> box value
                     | Some (Choice2Of2 value) -> box value
                     | _ -> null
+                | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
 
             [<CompilerMessage("This method is not intended for use from F#.", 10001, IsError = true, IsHidden = true)>]
             member this.Put(pos: int, value: obj) =
@@ -240,6 +243,7 @@ type TestMessage
                 | 12, (:? Test.AvroMsg.Person as x) ->
                     __supervisor <- (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Person> option)
                 | 12, _ -> __supervisor <- None
+                | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
 
             member this.Schema = TestMessage._SCHEMA
 

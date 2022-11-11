@@ -9,7 +9,7 @@ open Xunit.Abstractions
 let code =
     """
 
-let x = "Hello, World"
+let x = $"Hello, {x}"
 
 
 """

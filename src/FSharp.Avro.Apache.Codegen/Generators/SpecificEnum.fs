@@ -17,7 +17,7 @@ let genSpecificEnum (schema : EnumSchema) =
             let cases =
                 schema.Symbols
                 |> Seq.mapi (fun ix case -> SynMatchClause.Create(SynPat.Int32 ix, SynExpr.Create $"{schema.Fullname}.{case}"))
-                |> flip Seq.append [ SynMatchClause.OtherwiseFailwith($"Invalid value for enum {schema.Fullname}") ]
+                |> flip Seq.append [ SynMatchClause.OtherwiseRaise(SynExpr.AvroRuntimeException(valueIdent, $"{schema.Fullname}.{fromAvroIdent}")) ]
 
             SynExpr.CreateMatch(valueExpr, List.ofSeq cases)
 

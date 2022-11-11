@@ -1,6 +1,7 @@
 [<Microsoft.FSharp.Core.AutoOpen>]
 module FSharp.Avro.Codegen.AstExtensions
 
+open Avro
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml
@@ -31,6 +32,11 @@ type SynExpr with
     static member String(value : string) =
         SynExpr.CreateConst(SynConst.CreateString value)
 
+    static member PlusAll(values : SynExpr list) =
+        match values with
+        | [] -> failwith "Cannot proceed with an empty list"
+        | x :: xs -> xs |> Seq.fold (fun s e -> SynExpr.Plus(s, e)) x
+
     static member Box = SynExpr.Create "box"
     static member Boxed(expr : SynExpr) = SynExpr.CreateApp(SynExpr.Box, expr)
 
@@ -57,6 +63,9 @@ type SynExpr with
     static member Error(value : string) =
         SynExpr.CreateApp(SynExpr.Create "Error", SynExpr.CreateConst(SynConst.String(value, SynStringKind.Regular, range0)))
 
+    static member Raise(exceptionExpr : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create "raise", exceptionExpr)
+
     static member SeqMap(mapFunction : SynExpr) =
         SynExpr.MethodCall(SynLongIdent.Create "Seq.map", mapFunction)
 
@@ -66,12 +75,27 @@ type SynExpr with
     static member UncheckedDefault(typ : SynType) =
         SynExpr.MethodCall(SynLongIdent.Create("Unchecked.defaultof"), [ typ ])
 
+    static member AvroRuntimeException(message : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Create "Avro.AvroRuntimeException", SynExpr.EnsureParen message)
+
+    static member AvroRuntimeException(ident : Ident, where : string) =
+        let message =
+            SynExpr.PlusAll
+                [ SynExpr.String "Bad index "
+                  SynExpr.CreateApp(SynExpr.Create "string", SynExpr.Create ident)
+                  SynExpr.String $" in {where}" ]
+
+        SynExpr.CreateApp(SynExpr.Create "Avro.AvroRuntimeException", SynExpr.EnsureParen message)
+
 type SynMatchClause with
     static member OtherwiseError(errorMessage : string) =
         SynMatchClause.Otherwise(SynExpr.Error errorMessage)
 
     static member OtherwiseFailwith(errorMessage : string) =
         SynMatchClause.Otherwise(SynExpr.Failwith errorMessage)
+
+    static member OtherwiseRaise(exn : SynExpr) =
+        SynMatchClause.Otherwise(SynExpr.Raise(SynExpr.EnsureParen exn))
 
     static member OtherwiseNull = SynMatchClause.Otherwise SynExpr.CreateNull
 

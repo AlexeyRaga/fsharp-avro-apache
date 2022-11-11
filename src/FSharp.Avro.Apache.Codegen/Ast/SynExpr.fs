@@ -67,6 +67,13 @@ type SynExpr with
         let ident = SynLongIdent([ Ident.Create "op_PipeRight" ], [], [ Some(IdentTrivia.OriginalNotation("|>")) ])
         SynExpr.Create ident
 
+    static member PlusOp =
+        let ident = SynLongIdent([ Ident.Create "op_Plus" ], [], [ Some(IdentTrivia.OriginalNotation("+")) ])
+        SynExpr.Create ident
+
+    static member Plus(lhs : SynExpr, rhs : SynExpr) =
+        SynExpr.CreateApp(lhs, SynExpr.CreateApp(SynExpr.PlusOp, rhs))
+
     static member CreateIfThenElse(ifExpr : SynExpr, thenExpr : SynExpr, ?elseExpr : SynExpr ) =
         let trivia = { IfKeyword = range0
                        ElseKeyword = Some range0
@@ -79,7 +86,7 @@ type SynExpr with
         match exprs with
         | [] -> SynExpr.CreateConst(SynConst.Bool true)
         | [ x ] -> x
-        | x :: xs -> (xs |> Seq.fold (fun s e -> SynExpr.Condition(s, SynExpr.OpBooleanAnd, e)) x)
+        | x :: xs -> xs |> Seq.fold (fun s e -> SynExpr.Condition(s, SynExpr.OpBooleanAnd, e)) x
 
     static member Condition(lhs : SynExpr, comp : SynExpr, rhs : SynExpr) =
         SynExpr.CreateApp(lhs, SynExpr.CreateApp(comp, rhs))
