@@ -1,61 +1,93 @@
 module FSharp.Avro.Tests.SimpleTests
 
+open System.Collections.Generic
+open Microsoft.FSharp.Reflection
 open Test.AvroMsg
 open FsToolkit.ErrorHandling
-open Xunit
 open Hedgehog
+open Hedgehog.Xunit
 
-let genPerson : Gen<Person> =
+let md5BytesGen = Gen.byte (Range.linearBounded ()) |> Gen.array (Range.singleton 16)
+let fsMd5Gen = md5BytesGen |> Gen.map (MD5.Create >> Result.either id failwith)
+
+let csMd5Gen =
+    gen {
+        let value = CSharp.AvroMsg.MD5()
+        let! bytes = md5BytesGen
+        value.Value <- bytes
+        return value
+    }
+
+let genCsPerson : Gen<CSharp.AvroMsg.Person> =
     gen {
         let! name = Gen.string (Range.linear 0 255) Gen.unicode
         let! age = Gen.int32 (Range.linearBounded ())
-        return Person(name, age)
-        // return { name = name; age = age }
+        return CSharp.AvroMsg.Person(name = name, age = age)
     }
 
-let genTestMessage : Gen<TestMessage> =
-    gen {
-        let! mid = Gen.guid
-        let! num = Gen.int32 (Range.linearBounded ())
-        let! optNum = Gen.int32 (Range.linearBounded ()) |> Gen.option
-        let! str = Gen.string (Range.linear 0 255) Gen.alphaNum
-        let! array = Gen.string (Range.linear 0 255) Gen.alphaNum |> Gen.array (Range.linear 0 13)
-        let! choice = GenX.auto<Choice<string, int, bool>>
-        let! optChoice = GenX.auto<Choice<string, int, bool>> |> Gen.option
-        let! map = GenX.auto<Map<string, bool>>
-        let! md5 = Gen.byte (Range.linearBounded ()) |> Gen.array (Range.singleton 16) |> Gen.map (MD5.Create >> Result.either id failwith)
-        let! suit = GenX.auto<Suit>
-        let! owner = genPerson
-        let! contact = genPerson |> Gen.option
+let genChoice3<'a, 'b, 'c> =
+    Gen.choice
+        [ GenX.auto<'a> |> Gen.map box
+          GenX.auto<'b> |> Gen.map box
+          GenX.auto<'c> |> Gen.map box ]
 
-        let! super =
-            Gen.choice
-                [ genPerson |> Gen.map Choice2Of2
-                  Gen.string (Range.linear 0 10) Gen.unicode |> Gen.map Choice1Of2 ]
-            |> Gen.option
+let genChoice2<'a, 'b> = Gen.choice [ GenX.auto<'a> |> Gen.map box; GenX.auto<'b> |> Gen.map box ]
 
-        return
-            TestMessage(mid, num, array, optNum, str, choice, optChoice, map, md5, suit, owner, contact, super)
-            // { id = mid; num = num; array = array; optional_num = optNum; str = str; choice = choice; optional_choice = optChoice; map = map; md5 = md5; suit = suit; owner = owner; contact = contact; supervisor = super }
-    }
+let unwrapUnion value =
+    match FSharpValue.GetUnionFields(value, value.GetType()) with
+    | _, [| x |] -> x
+    | _ -> failwith "Expected union type that has one value"
 
-[<Fact>]
-let ``Should encode and decode record`` () =
-    property {
-        let! msg = genTestMessage
-        let decoded = msg |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA
-        decoded = msg
-    }
-    |> Property.checkBool
+let toCsPerson (msg : Test.AvroMsg.Person) =
+    CSharp.AvroMsg.Person(name = msg.name, age = msg.age)
 
-[<Fact>]
-let ``Should encode and decode as C#`` () =
-    property {
-        let! msg = genTestMessage
-        let bytes = AvroCodec.encode msg
-        let csRecord = AvroCodec.decode<CSharp.AvroMsg.TestMessage> CSharp.AvroMsg.TestMessage._SCHEMA bytes
-        let csEncoded = AvroCodec.encode csRecord
-        let decoded = AvroCodec.decode<TestMessage> TestMessage._SCHEMA csEncoded
-        decoded = msg
-    }
-    |> Property.checkBool
+let toCsMessage (msg : Test.AvroMsg.TestMessage) =
+    let md5 = CSharp.AvroMsg.MD5()
+    md5.Value <- msg.md5.Value
+
+    CSharp.AvroMsg.TestMessage(
+        id = msg.id,
+        num = msg.num,
+        array = msg.array,
+        optional_num = (msg.optional_num |> Option.toNullable),
+        str = msg.str,
+        choice = unwrapUnion msg.choice,
+        optional_choice = (msg.optional_choice |> Option.map unwrapUnion |> Option.toObj),
+        map = Dictionary(msg.map),
+        md5 = md5,
+        suit = enum (int msg.suit),
+        second_suit =
+            (match msg.second_suit with
+             | None -> null
+             | Some (Choice1Of2 str) -> box str
+             | Some (Choice2Of2 suit) -> box (enum<CSharp.AvroMsg.Suit> (int suit))),
+        owner = toCsPerson msg.owner,
+        contact = (msg.contact |> Option.map toCsPerson |> Option.toObj),
+        supervisor =
+            match msg.supervisor with
+            | None -> null
+            | Some (Choice1Of2 str) -> box str
+            | Some (Choice2Of2 sup) -> box sup
+    )
+
+type Generators =
+    static member __ =
+        let genStringArray = GenX.auto<string []> |> Gen.map (fun x -> x :> IList<string>)
+        let genBoolMap = GenX.auto<Dictionary<string, bool>> |> Gen.map (fun x -> x :> IDictionary<string, bool>)
+
+        GenX.defaults
+        |> AutoGenConfig.addGenerator fsMd5Gen
+        |> AutoGenConfig.addGenerator csMd5Gen
+        |> AutoGenConfig.addGenerator genStringArray
+        |> AutoGenConfig.addGenerator genBoolMap
+
+[<Property(typeof<Generators>)>]
+let ``Should roundtrip FSharp message`` (msg : Test.AvroMsg.TestMessage) =
+    let decoded = msg |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA
+    decoded = msg
+
+[<Property(typeof<Generators>)>]
+let ``Should decode CSharp message`` (msg : Test.AvroMsg.TestMessage) =
+    let csMsg = toCsMessage msg
+    let decoded = msg |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA
+    decoded = msg

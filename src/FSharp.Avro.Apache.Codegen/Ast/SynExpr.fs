@@ -35,6 +35,7 @@ type SynExpr with
     static member EnsureParen(value : SynExpr) =
         match value with
         | SynExpr.Paren _ -> value
+        | SynExpr.Const (SynConst.Unit, _) -> value
         | _ -> SynExpr.CreateParen value
 
     static member CreateApp(func : SynExpr, args : SynExpr list) =
@@ -103,6 +104,11 @@ type SynExpr with
     static member Ignore(expr : SynExpr) =
         SynExpr.PipeRight(expr, SynExpr.Create "ignore")
 
+    static member CreateTypeApp(expr : SynExpr, tyArgs : SynType list) =
+        SynExpr.TypeApp(expr, range0, tyArgs, [ range0 ], Some range0, range0, range0)
+    static member TypeOf(typ : SynType) =
+        SynExpr.CreateTypeApp(SynExpr.Create "typeof", [ typ ])
+
     static member CreateRecord(fields : list<RecordFieldName * option<SynExpr>>) =
         let fields = fields |> List.map (fun (rfn, synExpr) -> SynExprRecordField(rfn, None, synExpr, None))
         SynExpr.Record(None, None, fields, range0)
@@ -125,7 +131,7 @@ type SynExpr with
         let valueExpr = SynExpr.DotGet(instance, range0, method, range0)
 
         match args with
-        | Some xs -> SynExpr.CreateApp(valueExpr, xs)
+        | Some xs -> SynExpr.CreateApp(valueExpr, SynExpr.EnsureParen xs)
         | None -> valueExpr
 
     static member MethodCall(instance : SynExpr, method : Ident, ?args : SynExpr) =
@@ -135,7 +141,7 @@ type SynExpr with
         let valueExpr = SynExpr.Create instanceAndMethod
 
         match args with
-        | Some xs -> SynExpr.CreateApp(valueExpr, xs)
+        | Some xs -> SynExpr.CreateApp(valueExpr, SynExpr.EnsureParen xs)
         | None -> valueExpr
 
     static member MethodCall(instanceAndMethod : SynLongIdent, typeArgs : SynType list, ?args : SynExpr) =
@@ -143,7 +149,7 @@ type SynExpr with
         let valueExprWithType = SynExpr.TypeApp(valueExpr, range0, typeArgs, [], Some range0, range0, range0)
 
         match args with
-        | Some xs -> SynExpr.CreateApp(valueExprWithType, xs)
+        | Some xs -> SynExpr.CreateApp(valueExprWithType, SynExpr.EnsureParen xs)
         | None -> valueExprWithType
 
     static member CreateLambda(argName : Ident, body : SynExpr) =

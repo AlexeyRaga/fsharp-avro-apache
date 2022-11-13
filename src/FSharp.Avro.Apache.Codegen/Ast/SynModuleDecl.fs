@@ -15,6 +15,23 @@ type SynModuleDecl with
         let isRecursive = defaultArg isRecursive false
         SynModuleDecl.Let(isRecursive, bindings, range0)
 
+    static member CreateLet(?access, ?isInline, ?isRecursive, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr) =
+        SynModuleDecl.CreateLet(
+            [ SynBinding.Let(
+                  ?access = access,
+                  ?isInline = isInline,
+                  ?isMutable = isMutable,
+                  ?attributes = attributes,
+                  ?xmldoc = xmldoc,
+                  ?valData = valData,
+                  ?pattern = pattern,
+                  ?returnInfo = returnInfo,
+                  ?expr = expr,
+                  trivia = SynBindingTrivia.Let
+              ) ],
+            ?isRecursive = isRecursive
+        )
+
     static member CreateNestedModule(ci, decls, ?isRec, ?isCont) =
         let isRec = defaultArg isRec false
         let isCont = defaultArg isCont false

@@ -16,6 +16,11 @@ type SynType with
     static member CreateApp(typeName : SynType, typeArgs : SynType list, ?isPostfix : bool) =
         SynType.App(typeName, Some range0, typeArgs, [], Some range0, defaultArg isPostfix false, range0)
 
+    static member CreateVar(par : SynTypar) =
+        SynType.Var(par, range0)
+    static member CreateVar(name : Ident) =
+        SynType.Var(SynTypar(name, TyparStaticReq.None, false), range0)
+
     static member Object = SynType.Create "obj"
     static member Unit = SynType.Create "unit"
     static member Int = SynType.Create "int"

@@ -10,6 +10,5 @@ type SynComponentInfo with
         let constraints = defaultArg constraints []
         let xmldoc = defaultArg xmldoc PreXmlDoc.Empty
         let preferPostfix = defaultArg preferPostfix false
-        let access = defaultArg access None
         let range = range0
         SynComponentInfo(attributes, parameters, constraints, id, xmldoc, preferPostfix, access, range)

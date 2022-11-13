@@ -2,6 +2,7 @@ module FSharp.Avro.Codegen.Generators.SpecificFixed
 
 open Avro
 open FSharp.Compiler.Syntax
+open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Text.Range
 open FSharp.Avro.Codegen
 open FSharp.Compiler.Xml
@@ -30,7 +31,8 @@ let genSpecificFixed (schema : FixedSchema) =
             SynBinding.Let(
                 kind = SynBindingKind.Do,
                 expr =
-                    SynExpr.CreateIfThenElse(SynExpr.Inequality(valueExpr, SynExpr.CreateNull), SynExpr.Set(baseValue, valueExpr, range0))
+                    SynExpr.CreateIfThenElse(SynExpr.Inequality(valueExpr, SynExpr.CreateNull), SynExpr.Set(baseValue, valueExpr, range0)),
+                trivia = SynBindingTrivia.Do
             )
         )
 
@@ -82,7 +84,8 @@ let genSpecificFixed (schema : FixedSchema) =
             [ SynBinding.Let(
                   pattern = SynPat.Create($"(|{typeName.idText}|)", [ valueMatch ]),
                   expr = getValue,
-                  xmldoc = PreXmlDoc.Create $"Deconstructs {typeName.idText} by extracting an underlying byte array value"
+                  xmldoc = PreXmlDoc.Create $"Deconstructs {typeName.idText} by extracting an underlying byte array value",
+                  trivia = SynBindingTrivia.Let
               ) ]
 
     let companionModule =

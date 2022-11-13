@@ -1,15 +1,13 @@
 namespace rec FSharp.Avro.Bench.Setters
 
-open System
-
 module internal Opt =
     let mkSetter<'TType, 'TValue> (name : string) =
         let refl = typeof<'TType>.GetProperty(name).GetSetMethod()
-        Delegate.CreateDelegate(typeof<Action<'TType, 'TValue>>, refl) :?> Action<'TType, 'TValue>
+        System.Delegate.CreateDelegate(typeof<System.Action<'TType, 'TValue>>, refl) :?> System.Action<'TType, 'TValue>
 
-    let nameSetter = mkSetter<OptimisedPerson, String> "name"
+    let nameSetter = mkSetter<OptimisedPerson, string> "name"
 
-    let ageSetter = mkSetter<OptimisedPerson, Int32> "age"
+    let ageSetter = mkSetter<OptimisedPerson, int> "age"
 
 [<CLIMutable>]
 type OptimisedPerson =
@@ -37,3 +35,4 @@ type OptimisedPerson =
         Avro.Schema.Parse(
             "{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}"
         )
+

@@ -16,7 +16,7 @@ namespace CSharp.AvroMsg
 	[global::System.CodeDom.Compiler.GeneratedCodeAttribute("avrogen", "1.11.1")]
 	public partial class TestMessage : global::Avro.Specific.ISpecificRecord
 	{
-		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse(@"{""type"":""record"",""name"":""TestMessage"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""id"",""type"":{""type"":""string"",""logicalType"":""uuid""}},{""name"":""num"",""type"":""int""},{""name"":""array"",""type"":{""type"":""array"",""items"":""string""}},{""name"":""optional_num"",""type"":[""null"",""int""]},{""name"":""str"",""type"":""string""},{""name"":""choice"",""type"":[""string"",""int"",""boolean""]},{""name"":""optional_choice"",""type"":[""null"",""string"",""int"",""boolean""]},{""name"":""map"",""type"":{""type"":""map"",""values"":""boolean""}},{""name"":""md5"",""type"":{""type"":""fixed"",""name"":""MD5"",""doc"":""MD5 Hash sum"",""namespace"":""CSharp.AvroMsg"",""size"":16}},{""name"":""suit"",""type"":{""type"":""enum"",""name"":""Suit"",""doc"":""Your usual card deck suit"",""namespace"":""CSharp.AvroMsg"",""symbols"":[""SPADES"",""HEARTS"",""DIAMONDS"",""CLUBS""]}},{""name"":""owner"",""doc"":""Who owns this thing anyway?!"",""type"":{""type"":""record"",""name"":""Person"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""name"",""type"":""string""},{""name"":""age"",""type"":""int""}]}},{""name"":""contact"",""type"":[""null"",""Person""]},{""name"":""supervisor"",""type"":[""null"",""string"",""Person""]}]}");
+		public static global::Avro.Schema _SCHEMA = global::Avro.Schema.Parse(@"{""type"":""record"",""name"":""TestMessage"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""id"",""type"":{""type"":""string"",""logicalType"":""uuid""}},{""name"":""num"",""type"":""int""},{""name"":""array"",""type"":{""type"":""array"",""items"":""string""}},{""name"":""optional_num"",""type"":[""null"",""int""]},{""name"":""str"",""type"":""string""},{""name"":""choice"",""type"":[""string"",""int"",""boolean""]},{""name"":""optional_choice"",""type"":[""null"",""string"",""int"",""boolean""]},{""name"":""map"",""type"":{""type"":""map"",""values"":""boolean""}},{""name"":""md5"",""type"":{""type"":""fixed"",""name"":""MD5"",""doc"":""MD5 Hash sum"",""namespace"":""CSharp.AvroMsg"",""size"":16}},{""name"":""suit"",""type"":{""type"":""enum"",""name"":""Suit"",""doc"":""Your usual card deck suit"",""namespace"":""CSharp.AvroMsg"",""symbols"":[""SPADES"",""HEARTS"",""DIAMONDS"",""CLUBS""]}},{""name"":""second_suit"",""type"":[""null"",""string"",""Suit""]},{""name"":""owner"",""doc"":""Who owns this thing anyway?!"",""type"":{""type"":""record"",""name"":""Person"",""namespace"":""CSharp.AvroMsg"",""fields"":[{""name"":""name"",""type"":""string""},{""name"":""age"",""type"":""int""}]}},{""name"":""contact"",""type"":[""null"",""Person""]},{""name"":""supervisor"",""type"":[""null"",""string"",""Person""]}]}");
 		private System.Guid _id;
 		private int _num;
 		private IList<System.String> _array;
@@ -27,6 +27,7 @@ namespace CSharp.AvroMsg
 		private IDictionary<string,System.Boolean> _map;
 		private CSharp.AvroMsg.MD5 _md5;
 		private CSharp.AvroMsg.Suit _suit;
+		private object _second_suit;
 		/// <summary>
 		/// Who owns this thing anyway?!
 		/// </summary>
@@ -150,6 +151,17 @@ namespace CSharp.AvroMsg
 				this._suit = value;
 			}
 		}
+		public object second_suit
+		{
+			get
+			{
+				return this._second_suit;
+			}
+			set
+			{
+				this._second_suit = value;
+			}
+		}
 		/// <summary>
 		/// Who owns this thing anyway?!
 		/// </summary>
@@ -200,9 +212,10 @@ namespace CSharp.AvroMsg
 			case 7: return this.map;
 			case 8: return this.md5;
 			case 9: return this.suit;
-			case 10: return this.owner;
-			case 11: return this.contact;
-			case 12: return this.supervisor;
+			case 10: return this.second_suit;
+			case 11: return this.owner;
+			case 12: return this.contact;
+			case 13: return this.supervisor;
 			default: throw new global::Avro.AvroRuntimeException("Bad index " + fieldPos + " in Get()");
 			};
 		}
@@ -220,9 +233,10 @@ namespace CSharp.AvroMsg
 			case 7: this.map = (IDictionary<string,System.Boolean>)fieldValue; break;
 			case 8: this.md5 = (CSharp.AvroMsg.MD5)fieldValue; break;
 			case 9: this.suit = (CSharp.AvroMsg.Suit)fieldValue; break;
-			case 10: this.owner = (CSharp.AvroMsg.Person)fieldValue; break;
-			case 11: this.contact = (CSharp.AvroMsg.Person)fieldValue; break;
-			case 12: this.supervisor = (System.Object)fieldValue; break;
+			case 10: this.second_suit = (System.Object)fieldValue; break;
+			case 11: this.owner = (CSharp.AvroMsg.Person)fieldValue; break;
+			case 12: this.contact = (CSharp.AvroMsg.Person)fieldValue; break;
+			case 13: this.supervisor = (System.Object)fieldValue; break;
 			default: throw new global::Avro.AvroRuntimeException("Bad index " + fieldPos + " in Put()");
 			};
 		}

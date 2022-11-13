@@ -10,9 +10,11 @@ type ParsedImplFileInputTrivia with
           CodeComments = [] }
 
 type SynModuleOrNamespaceTrivia with
-    static member Zero =
-        { SynModuleOrNamespaceTrivia.ModuleKeyword = Some range0
-          NamespaceKeyword = Some range0 }
+    static member Module =
+        { SynModuleOrNamespaceTrivia.LeadingKeyword = SynModuleOrNamespaceLeadingKeyword.Module(range0) }
+
+    static member Namespace =
+        { SynModuleOrNamespaceTrivia.LeadingKeyword = SynModuleOrNamespaceLeadingKeyword.Namespace(range0) }
 
 type SynExprMatchTrivia with
     static member Zero =
@@ -26,9 +28,18 @@ type SynMemberGetSetTrivia with
           AndKeyword = Some range0
           SetKeyword = Some range0 }
 
-type SynMemberFlagsTrivia with
-    static member InstanceMember =
-        { SynMemberFlagsTrivia.Zero with MemberRange = Some range0 }
+type SynBindingTrivia with
+    static member InstanceMember : SynBindingTrivia =
+        { LeadingKeyword = SynLeadingKeyword.Member(range0); EqualsRange = Some range0 }
 
-    static member StaticMember =
-        { SynMemberFlagsTrivia.Zero with MemberRange = Some range0; StaticRange = Some range0 }
+    static member Override : SynBindingTrivia =
+        { LeadingKeyword = SynLeadingKeyword.Override(range0); EqualsRange = Some range0 }
+
+    static member StaticMember : SynBindingTrivia =
+        { LeadingKeyword = SynLeadingKeyword.StaticMember(range0, range0); EqualsRange = Some range0 }
+
+    static member Let : SynBindingTrivia =
+        { LeadingKeyword = SynLeadingKeyword.Let(range0); EqualsRange = Some range0 }
+
+    static member Do : SynBindingTrivia =
+        { LeadingKeyword = SynLeadingKeyword.Do(range0); EqualsRange = Some range0 }

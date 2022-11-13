@@ -6,35 +6,38 @@ open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml
 
 type SynMemberFlags with
-    static member Create(kind : SynMemberKind, ?isStatic : bool, ?trivia) : SynMemberFlags =
+    static member Create(kind : SynMemberKind, ?isStatic : bool) : SynMemberFlags =
         { IsInstance = not (defaultArg isStatic false)
           MemberKind = kind
           IsDispatchSlot = false
           IsOverrideOrExplicitImpl = false
           IsFinal = false
-          GetterOrSetterIsCompilerGenerated = false
-          Trivia = defaultArg trivia SynMemberFlagsTrivia.Zero }
+          GetterOrSetterIsCompilerGenerated = false }
 
-    static member InstanceMember = SynMemberFlags.Create(SynMemberKind.Member, false, SynMemberFlagsTrivia.InstanceMember)
-    static member StaticMember = SynMemberFlags.Create(SynMemberKind.Member, true, SynMemberFlagsTrivia.StaticMember)
+    static member InstanceMember = SynMemberFlags.Create(SynMemberKind.Member, false)
+    static member StaticMember = SynMemberFlags.Create(SynMemberKind.Member, true)
 
 type SynMemberDefn with
     static member CreateLetBinding(binding : SynBinding, ?isInline : bool, ?isRecursive : bool) =
         SynMemberDefn.LetBindings([ binding ], defaultArg isInline false, defaultArg isRecursive false, range0)
 
-    static member Let(?access, ?isInline, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr) =
-        SynBinding.Let(
-            ?access = access,
+    static member Let(?access, ?isInline, ?isRecursive, ?isMutable, ?attributes, ?xmldoc, ?valData, ?pattern, ?returnInfo, ?expr, ?trivia) =
+        SynMemberDefn.CreateLetBinding(
+            SynBinding.Let(
+                ?access = access,
+                ?isInline = isInline,
+                ?isMutable = isMutable,
+                ?attributes = attributes,
+                ?xmldoc = xmldoc,
+                ?valData = valData,
+                ?pattern = pattern,
+                ?returnInfo = returnInfo,
+                ?expr = expr,
+                ?trivia = trivia
+            ),
             ?isInline = isInline,
-            ?isMutable = isMutable,
-            ?attributes = attributes,
-            ?xmldoc = xmldoc,
-            ?valData = valData,
-            ?pattern = pattern,
-            ?returnInfo = returnInfo,
-            ?expr = expr
+            ?isRecursive = isRecursive
         )
-        |> SynMemberDefn.CreateLetBinding
 
     static member StaticMember
         (
@@ -56,7 +59,15 @@ type SynMemberDefn with
         let pat = SynPat.Create(SynLongIdent.Create [ name ], memberArgs, ?access = access)
 
         let bnd =
-            SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes, ?access = access, ?xmldoc = xmldoc)
+            SynBinding.Let(
+                valData = valData,
+                pattern = pat,
+                expr = body,
+                trivia = SynBindingTrivia.StaticMember,
+                ?attributes = attributes,
+                ?access = access,
+                ?xmldoc = xmldoc
+            )
 
         SynMemberDefn.Member(bnd, range0)
 
@@ -71,13 +82,11 @@ type SynMemberDefn with
             ?access : SynAccess,
             ?xmldoc : PreXmlDoc
         ) =
-        let flags =
+        let flags, trivia =
             if defaultArg isOverride false then
-                { SynMemberFlags.InstanceMember with
-                    IsOverrideOrExplicitImpl = true
-                    Trivia = { SynMemberFlags.InstanceMember.Trivia with OverrideRange = Some range0 } }
+                { SynMemberFlags.InstanceMember with IsOverrideOrExplicitImpl = true }, SynBindingTrivia.Override
             else
-                SynMemberFlags.InstanceMember
+                SynMemberFlags.InstanceMember, SynBindingTrivia.InstanceMember
 
         let valData = SynValData(Some flags, SynValInfo.Empty, None)
 
@@ -89,6 +98,14 @@ type SynMemberDefn with
         let pat = SynPat.Create(SynLongIdent.Create [ thisIdent; name ], memberArgs, ?access = access)
 
         let bnd =
-            SynBinding.Let(valData = valData, pattern = pat, expr = body, ?attributes = attributes, ?access = access, ?xmldoc = xmldoc)
+            SynBinding.Let(
+                valData = valData,
+                pattern = pat,
+                expr = body,
+                trivia = trivia,
+                ?attributes = attributes,
+                ?access = access,
+                ?xmldoc = xmldoc
+            )
 
         SynMemberDefn.Member(bnd, range0)

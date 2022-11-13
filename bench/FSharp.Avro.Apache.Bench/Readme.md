@@ -29,11 +29,12 @@ This optimisation has a very significant impact and helps bringing `F# Records` 
 
 The results are:
 
-|                   Method |       Mean |    Error |   StdDev | Ratio | RatioSD |
-|------------------------- |-----------:|---------:|---------:|------:|--------:|
-|             'C# Classes' |   672.2 ns |  2.02 ns |  1.79 ns |  1.00 |    0.00 |
-|             'F# Records' | 4,446.3 ns | 14.99 ns | 14.02 ns |  6.62 |    0.03 |
-| 'F# Records (Optimised)' | 1,167.5 ns |  2.53 ns |  2.11 ns |  1.74 |    0.01 |
+| Method                           |       Mean |    Error |   StdDev | Ratio | RatioSD |
+|----------------------------------|-----------:|---------:|---------:|------:|--------:|
+| 'C# Classes'                     |   672.2 ns |  2.02 ns |  1.79 ns |  1.00 |    0.00 |
+| 'F# Records (Reflection)'        | 4,446.3 ns | 14.99 ns | 14.02 ns |  6.62 |    0.03 |
+| 'F# Records (Cached Reflection)' | 1,190.8 ns | 20.55 ns | 40.09 ns |  1.79 |    0.06 |
+| 'F# Records (Experimental)'      | 1,167.5 ns |  2.53 ns |  2.11 ns |  1.74 |    0.01 |
 
 ### Micro-optimise setters
 

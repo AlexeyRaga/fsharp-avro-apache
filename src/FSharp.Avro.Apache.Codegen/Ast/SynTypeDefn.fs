@@ -10,6 +10,7 @@ type SynTypeDefn with
         (
             name : Ident,
             repr : SynTypeDefnRepr,
+            kwd : SynTypeDefnLeadingKeyword,
             ?members : SynMemberDefns,
             ?attributes : SynAttributeList list,
             ?xmldoc : PreXmlDoc
@@ -19,8 +20,12 @@ type SynTypeDefn with
 
         let extraMembers, trivia =
             match members with
-            | None -> SynMemberDefns.Empty, SynTypeDefnTrivia.Zero
-            | Some defns -> defns, { SynTypeDefnTrivia.Zero with WithKeyword = Some range0 }
+            | None -> SynMemberDefns.Empty, { SynTypeDefnTrivia.Zero with LeadingKeyword = kwd }
+            | Some defns ->
+                defns,
+                { SynTypeDefnTrivia.Zero with
+                    WithKeyword = Some range0
+                    LeadingKeyword = kwd }
 
         SynTypeDefn(name, repr, extraMembers, None, range0, trivia)
 
@@ -28,6 +33,7 @@ type SynTypeDefn with
         SynTypeDefn.FromRepr(
             name,
             SynTypeDefnRepr.ObjectModel(SynTypeDefnKind.Class, members, range0),
+            SynTypeDefnLeadingKeyword.Type(range0),
             ?members = None,
             ?attributes = attributes,
             ?xmldoc = xmldoc
@@ -47,9 +53,10 @@ type SynTypeDefn with
         SynTypeDefn.FromRepr(
             name,
             repr,
-            defaultArg members SynMemberDefns.Empty,
-            defaultArg attributes [],
-            defaultArg xmldoc PreXmlDoc.Empty
+            SynTypeDefnLeadingKeyword.Type(range0),
+            ?members = members,
+            ?attributes = attributes,
+            ?xmldoc = xmldoc
         )
 
     static member CreateRecord
@@ -65,7 +72,34 @@ type SynTypeDefn with
         SynTypeDefn.FromRepr(
             name,
             repr,
-            defaultArg members SynMemberDefns.Empty,
-            defaultArg attributes [],
-            defaultArg xmldoc PreXmlDoc.Empty
+            SynTypeDefnLeadingKeyword.Type(range0),
+            ?members = members,
+            ?attributes = attributes,
+            ?xmldoc = xmldoc
+        )
+
+    static member CreateEnum(name : Ident, items : Ident list, ?attributes : SynAttributeList list, ?xmldoc : PreXmlDoc) =
+        let cases =
+            items
+            |> List.mapi (fun i case ->
+                SynEnumCase(
+                    SynAttributes.Empty,
+                    SynIdent(case, None),
+                    SynConst.Int32 i,
+                    range0,
+                    PreXmlDoc.Empty,
+                    range0,
+                    { BarRange = Some range0
+                      EqualsRange = range0 }
+                ))
+
+        let repr = SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Enum(cases, range0), range0)
+
+        SynTypeDefn.FromRepr(
+            name,
+            repr,
+            SynTypeDefnLeadingKeyword.Type(range0),
+            ?members = None,
+            ?attributes = attributes,
+            ?xmldoc = xmldoc
         )

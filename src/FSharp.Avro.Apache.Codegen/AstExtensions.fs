@@ -1,8 +1,8 @@
 [<Microsoft.FSharp.Core.AutoOpen>]
 module FSharp.Avro.Codegen.AstExtensions
 
-open Avro
 open FSharp.Compiler.Syntax
+open FSharp.Compiler.SyntaxTrivia
 open FSharp.Compiler.Text.Range
 open FSharp.Compiler.Xml
 
@@ -23,6 +23,9 @@ type SynPat with
         SynPat.CreateConst(SynConst.CreateString value)
 
 type SynExpr with
+    static member CreateParenTuple(items : SynExpr list) =
+        SynExpr.CreateParen(SynExpr.CreateTuple items)
+
     static member IsNull(value : SynExpr) =
         SynExpr.Condition(SynExpr.Boxed value, SynExpr.OpEquality, SynExpr.CreateNull)
 
@@ -38,7 +41,9 @@ type SynExpr with
         | x :: xs -> xs |> Seq.fold (fun s e -> SynExpr.Plus(s, e)) x
 
     static member Box = SynExpr.Create "box"
-    static member Boxed(expr : SynExpr) = SynExpr.CreateApp(SynExpr.Box, expr)
+
+    static member Boxed(expr : SynExpr) =
+        SynExpr.CreateApp(SynExpr.Box, SynExpr.EnsureParen expr)
 
     static member Choice(num : int, ofN : int, value : SynExpr) =
         SynExpr.CreateApp(SynExpr.Create(Ident.Choice(num, ofN)), value)
@@ -87,6 +92,9 @@ type SynExpr with
 
         SynExpr.CreateApp(SynExpr.Create "Avro.AvroRuntimeException", SynExpr.EnsureParen message)
 
+    static member CreateLetOrUse(bindings : SynBinding list, expr : SynExpr, ?isUse : bool, ?isRecursive : bool) =
+        SynExpr.LetOrUse(defaultArg isRecursive false, defaultArg isUse false, bindings, expr, range0, { InKeyword = None })
+
 type SynMatchClause with
     static member OtherwiseError(errorMessage : string) =
         SynMatchClause.Otherwise(SynExpr.Error errorMessage)
@@ -127,6 +135,13 @@ type SynMemberDefn with
         )
 
     static member GetterForField(thisIdent : Ident, typ : SynType, fieldIdent : Ident, propIdent : Ident, ?xmldoc : PreXmlDoc) =
-        let fld = SynMemberDefn.Let(isMutable = true, pattern = SynPat.CreateNamed fieldIdent, expr = SynExpr.Create propIdent)
+        let fld =
+            SynMemberDefn.Let(
+                isMutable = true,
+                pattern = SynPat.CreateNamed fieldIdent,
+                expr = SynExpr.Create propIdent,
+                trivia = SynBindingTrivia.Let
+            )
+
         let prop = SynMemberDefn.InstanceMember(thisIdent, propIdent, SynExpr.Create fieldIdent, ?xmldoc = xmldoc)
         fld, prop

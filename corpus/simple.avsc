@@ -24,6 +24,7 @@
         "symbols": ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"]
       }
     },
+    { "name": "second_suit", "type": ["null", "string", "Suit"] },
     { "name": "owner",
       "doc": "Who owns this thing anyway?!",
       "type": {

@@ -9,7 +9,12 @@ open Xunit.Abstractions
 let code =
     """
 
-let x = $"Hello, {x}"
+match foo with
+// return a
+| 1 -> "this is a"
+// return b
+| 2 -> "this is b"
+
 
 
 """

@@ -22,11 +22,11 @@ type SynPat with
         let args = SynArgPats.Pats(args)
         SynPat.LongIdent(ident, extraId, typarDecls, args, access, range0)
 
-    static member Create(name : string, args : SynPat list) =
-        SynPat.Create(SynLongIdent.Create name, args)
+    static member Create(name : string, args : SynPat list, ?typarDecls, ?extraId, ?access) =
+        SynPat.Create(SynLongIdent.Create name, args, ?typarDecls = typarDecls, ?extraId = extraId, ?access = access)
 
-    static member Create(ident : Ident, args : SynPat list) =
-        SynPat.Create(SynLongIdent.Create [ ident ], args)
+    static member Create(ident : Ident, args : SynPat list, ?typarDecls, ?extraId, ?access) =
+        SynPat.Create(SynLongIdent.Create [ ident ], args, ?typarDecls = typarDecls, ?extraId = extraId, ?access = access)
 
     static member CreateNamed(ident : SynIdent, ?isThisVal, ?access) =
         let isThisVal = defaultArg isThisVal false

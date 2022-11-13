@@ -21,7 +21,15 @@ type SynModuleOrNamespace with
         let decls = defaultArg decls []
         let docs = defaultArg docs PreXmlDoc.Empty
         let attribs = defaultArg attribs SynAttributes.Empty
-        SynModuleOrNamespace(ident, isRecursive, kind, decls, docs, attribs, access, range, SynModuleOrNamespaceTrivia.Zero)
+
+        let trivia =
+            match kind with
+            | SynModuleOrNamespaceKind.NamedModule -> SynModuleOrNamespaceTrivia.Module
+            | SynModuleOrNamespaceKind.AnonModule -> SynModuleOrNamespaceTrivia.Module
+            | SynModuleOrNamespaceKind.DeclaredNamespace -> SynModuleOrNamespaceTrivia.Namespace
+            | SynModuleOrNamespaceKind.GlobalNamespace -> SynModuleOrNamespaceTrivia.Namespace
+
+        SynModuleOrNamespace(ident, isRecursive, kind, decls, docs, attribs, access, range, trivia)
 
     static member CreateNamespace
         (
@@ -46,19 +54,6 @@ type SynModuleOrNamespace with
         SynModuleOrNamespace.Create(
             ident,
             SynModuleOrNamespaceKind.NamedModule,
-            ?isRecursive = isRecursive,
-            ?decls = decls,
-            ?docs = docs,
-            ?attribs = attribs,
-            ?access = access
-        )
-
-    static member CreateAnonModule(?ident, ?isRecursive, ?decls, ?docs, ?attribs, ?access) =
-        let ident = defaultArg ident (Ident.CreateLong "Tmp")
-
-        SynModuleOrNamespace.Create(
-            ident,
-            SynModuleOrNamespaceKind.AnonModule,
             ?isRecursive = isRecursive,
             ?decls = decls,
             ?docs = docs,

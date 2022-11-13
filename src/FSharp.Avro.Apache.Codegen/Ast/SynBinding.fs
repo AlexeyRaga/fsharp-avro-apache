@@ -27,11 +27,7 @@ type SynBinding with
         let headPat = defaultArg pattern SynPat.CreateNull
         let expr = defaultArg expr (SynExpr.CreateTyped(SynExpr.CreateNull, SynType.Unit))
         let bind = DebugPointAtBinding.NoneAtLet
-
-        let trivia =
-            defaultArg trivia
-                { LetKeyword = Some range0
-                  EqualsRange = Some range0 }
+        let trivia = defaultArg trivia SynBindingTrivia.Zero
 
         SynBinding(
             access,
@@ -60,7 +56,7 @@ type SynBinding with
         ) =
         let valData = SynValData(Some flags, SynValInfo.Empty, None)
 
-        SynBinding.SynBinding(
+        SynBinding(
             None,
             SynBindingKind.Normal,
             false,

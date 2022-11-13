@@ -64,7 +64,7 @@ type Benchmarks () =
     member this.FSharpRecord () =
         this.FillInMessage fsMd5 FSPerson FSMessage
 
-    [<Benchmark(Description = "F# Records (Optimised)")>]
+    [<Benchmark(Description = "F# Records (Squeeze perf)")>]
     member this.FSharpRecordOptimised () =
         this.FillInMessage fsMd5Opt FSPersonOpt FSMessageOpt
 
