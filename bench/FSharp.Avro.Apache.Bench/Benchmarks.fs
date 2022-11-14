@@ -4,6 +4,7 @@ open System
 open Avro.Specific
 open BenchmarkDotNet
 open BenchmarkDotNet.Attributes
+open FsToolkit.ErrorHandling
 
 type Benchmarks () =
 
@@ -12,7 +13,7 @@ type Benchmarks () =
     let CSMessage = Activator.CreateInstance<CSharp.AvroMsg.TestMessage>()
 
 
-    let (Ok fsMd5) = Test.AvroMsg.MD5.Create(Array.replicate 16 77uy)
+    let fsMd5 = Test.AvroMsg.MD5.Create(Array.replicate 16 77uy) |> Result.either id failwith
     let FSPerson = Activator.CreateInstance<Test.AvroMsg.Person>()
     let FSMessage = Activator.CreateInstance<Test.AvroMsg.TestMessage>()
 
