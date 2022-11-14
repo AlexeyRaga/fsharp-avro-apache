@@ -33,37 +33,11 @@ module MD5 =
     let (|MD5|) (value: MD5) = value.Value
 
 ///Your usual card deck suit
-[<RequireQualifiedAccess; Struct>]
 type Suit =
-    | SPADES
-    | HEARTS
-    | DIAMONDS
-    | CLUBS
-
-    static member _SCHEMA =
-        Avro.Schema.Parse(
-            "{\"type\":\"enum\",\"name\":\"Suit\",\"doc\":\"Your usual card deck suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}"
-        )
-
-    ///Only used in Avro serialisation.
-    ///Is not intended to be used by in users code.
-    static member internal FromAvroEnumValue(value: int) =
-        match value with
-        | 0 -> Test.AvroMsg.Suit.SPADES
-        | 1 -> Test.AvroMsg.Suit.HEARTS
-        | 2 -> Test.AvroMsg.Suit.DIAMONDS
-        | 3 -> Test.AvroMsg.Suit.CLUBS
-        | _ ->
-            raise (Avro.AvroRuntimeException("Bad index " + string value + " in Test.AvroMsg.Suit.FromAvroEnumValue"))
-
-    ///Only used in Avro serialisation.
-    ///Is not intended to be used by in users code.
-    static member internal ToAvroEnumValue(value) =
-        match value with
-        | Test.AvroMsg.Suit.SPADES -> "SPADES"
-        | Test.AvroMsg.Suit.HEARTS -> "HEARTS"
-        | Test.AvroMsg.Suit.DIAMONDS -> "DIAMONDS"
-        | Test.AvroMsg.Suit.CLUBS -> "CLUBS"
+    | SPADES = 0
+    | HEARTS = 1
+    | DIAMONDS = 2
+    | CLUBS = 3
 
 [<AutoOpen>]
 module internal Person =
@@ -95,7 +69,7 @@ type Person =
             match pos, value with
             | 0, (:? string as x) -> set_name.Invoke(this, x)
             | 1, (:? int as x) -> set_age.Invoke(this, x)
-            | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
+            | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Put()"))
 
         member this.Schema = Person._SCHEMA
 
@@ -173,25 +147,25 @@ type TestMessage =
                 | Choice3Of3 value -> box (value)
             | 6 ->
                 match this.optional_choice with
-                | Some (Choice1Of3 value) -> box (value)
-                | Some (Choice2Of3 value) -> box (value)
-                | Some (Choice3Of3 value) -> box (value)
+                | Some(Choice1Of3 value) -> box (value)
+                | Some(Choice2Of3 value) -> box (value)
+                | Some(Choice3Of3 value) -> box (value)
                 | _ -> null
             | 7 when box (this.map) = null -> null
             | 7 -> this.map |> Map.toSeq |> dict |> System.Collections.Generic.Dictionary |> box
             | 8 -> box (this.md5)
-            | 9 -> Test.AvroMsg.Suit.ToAvroEnumValue (this.suit) |> box
+            | 9 -> box (this.suit)
             | 10 ->
                 match this.second_suit with
-                | Some (Choice1Of2 value) -> box (value)
-                | Some (Choice2Of2 value) -> box (Test.AvroMsg.Suit.ToAvroEnumValue(value))
+                | Some(Choice1Of2 value) -> box (value)
+                | Some(Choice2Of2 value) -> box (value)
                 | _ -> null
             | 11 -> box (this.owner)
             | 12 -> this.contact |> Option.map (box) |> Option.defaultValue (null)
             | 13 ->
                 match this.supervisor with
-                | Some (Choice1Of2 value) -> box (value)
-                | Some (Choice2Of2 value) -> box (value)
+                | Some(Choice1Of2 value) -> box (value)
+                | Some(Choice2Of2 value) -> box (value)
                 | _ -> null
             | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
 
@@ -220,13 +194,17 @@ type TestMessage =
             | 7, (:? System.Collections.Generic.IDictionary<string, bool> as x) ->
                 set_map.Invoke(this, Map.ofSeq (Seq.map (|KeyValue|) x))
             | 8, (:? Test.AvroMsg.MD5 as x) -> set_md5.Invoke(this, x)
-            | 9, (:? int as x) -> set_suit.Invoke(this, Test.AvroMsg.Suit.FromAvroEnumValue(x))
+            | 9, (:? Test.AvroMsg.Suit as x) -> set_suit.Invoke(this, x)
+            | 9, (:? int as x) -> set_suit.Invoke(this, (enum x))
             | 10, (:? string as x) ->
                 set_second_suit
                     .Invoke(this, (Some(Choice1Of2 x): Choice<string, Test.AvroMsg.Suit> option))
             | 10, (:? Test.AvroMsg.Suit as x) ->
                 set_second_suit
                     .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Suit> option))
+            | 10, (:? int as x) ->
+                set_second_suit
+                    .Invoke(this, (Some(Choice2Of2(enum x)): Choice<string, Test.AvroMsg.Suit> option))
             | 10, _ -> set_second_suit.Invoke(this, None)
             | 11, (:? Test.AvroMsg.Person as x) -> set_owner.Invoke(this, x)
             | 12, (:? Test.AvroMsg.Person as x) -> set_contact.Invoke(this, Some(x))
@@ -238,7 +216,7 @@ type TestMessage =
                 set_supervisor
                     .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Person> option))
             | 13, _ -> set_supervisor.Invoke(this, None)
-            | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Get()"))
+            | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Put()"))
 
         member this.Schema = TestMessage._SCHEMA
 

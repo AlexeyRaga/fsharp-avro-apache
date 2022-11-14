@@ -16,11 +16,6 @@ type Benchmarks () =
     let FSPerson = Activator.CreateInstance<Test.AvroMsg.Person>()
     let FSMessage = Activator.CreateInstance<Test.AvroMsg.TestMessage>()
 
-
-    let (Ok fsMd5Opt) = FSharp.Avro.Bench.OptimisedMsg.MD5.Create(Array.replicate 16 77uy)
-    let FSPersonOpt = Activator.CreateInstance<FSharp.Avro.Bench.OptimisedMsg.Person>()
-    let FSMessageOpt = Activator.CreateInstance<FSharp.Avro.Bench.OptimisedMsg.TestMessage>()
-
     member private this.FillInMessage md5 (person : ISpecificRecord) (message : ISpecificRecord) =
         person.Put(0, this.stringValue)
         person.Put(1, this.intValue)
@@ -35,9 +30,10 @@ type Benchmarks () =
         message.Put(7, dict ["fst", this.boolValue; this.stringValue, this.boolValue])
         message.Put(8, md5)
         message.Put(9, this.suitValue)
-        message.Put(10, person)
+        message.Put(10, "Nothing")
         message.Put(11, person)
-        message.Put(12, this.stringValue)
+        message.Put(12, person)
+        message.Put(13, person)
 
 
     // [<Params(0uy, 73uy, 13uy, 255uy)>]
@@ -63,8 +59,3 @@ type Benchmarks () =
     [<Benchmark(Description = "F# Records")>]
     member this.FSharpRecord () =
         this.FillInMessage fsMd5 FSPerson FSMessage
-
-    [<Benchmark(Description = "F# Records (Squeeze perf)")>]
-    member this.FSharpRecordOptimised () =
-        this.FillInMessage fsMd5Opt FSPersonOpt FSMessageOpt
-

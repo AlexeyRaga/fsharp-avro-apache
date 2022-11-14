@@ -12,9 +12,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "bench", "bench", "{26D2B239
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.Avro.Apache.Bench", "bench\FSharp.Avro.Apache.Bench\FSharp.Avro.Apache.Bench.fsproj", "{CB5AD661-4270-4F6D-A735-AC38B97D5E05}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.Avro.Apache.Contract", "src\FSharp.Avro.Apache.Contract\FSharp.Avro.Apache.Contract.fsproj", "{0738DD11-5BFE-4171-9454-D361C47AC058}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.Avro.Apache.Contract", "contract\FSharp.Avro.Apache.Contract\FSharp.Avro.Apache.Contract.fsproj", "{0738DD11-5BFE-4171-9454-D361C47AC058}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharp.Avro.Apache.Contract", "src\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj", "{BD94CBCC-C90B-408C-8F6A-FDD56269EDF8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharp.Avro.Apache.Contract", "contract\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj", "{BD94CBCC-C90B-408C-8F6A-FDD56269EDF8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contract", "contract", "{22E9846B-C7BE-416D-81A7-19B690DFF99D}"
 EndProject

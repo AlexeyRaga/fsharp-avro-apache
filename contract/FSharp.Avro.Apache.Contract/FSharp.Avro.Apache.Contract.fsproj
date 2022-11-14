@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="..\..\corpus\simple.avsc">
+        <Content Include="..\simple.avsc">
             <Link>simple.avsc</Link>
         </Content>
     </ItemGroup>
@@ -19,11 +19,11 @@
     <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
         <PropertyGroup>
             <RecordRepresentation>record</RecordRepresentation>
-            <FSharpAvroGen>../FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/FSharp.Avro.Apache.Codegen.dll</FSharpAvroGen>
+            <FSharpAvroGen>../../src/FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/FSharp.Avro.Apache.Codegen.dll</FSharpAvroGen>
         </PropertyGroup>
 
         <ItemGroup>
-            <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc"/>
+            <AvroSchemas Include="$(SolutionDir)/contract/*.avsc"/>
         </ItemGroup>
 
         <MakeDir Directories="$(ProjectDir)/generated/"/>

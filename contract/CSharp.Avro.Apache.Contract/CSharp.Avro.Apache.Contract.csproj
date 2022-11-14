@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\..\corpus\simple.avsc">
+    <Content Include="..\simple.avsc">
       <Link>simple.avsc</Link>
     </Content>
   </ItemGroup>
@@ -18,7 +18,7 @@
 
   <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
     <ItemGroup>
-      <AvroSchemas Include="$(SolutionDir)/corpus/*.avsc" />
+      <AvroSchemas Include="$(SolutionDir)/contract/*.avsc" />
     </ItemGroup>
 
     <MakeDir Directories="$(ProjectDir)/generated/" />

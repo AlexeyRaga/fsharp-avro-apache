@@ -28,22 +28,19 @@ type CLIArguments =
             match this with
             | Schema_File _ -> "Path to .avsc file"
             | Output _ -> "Output location"
-            | Record_Repr _ -> "Record representation, class or record"
+            | Record_Repr _ -> "Record representation, 'class' or 'record'"
 
 type Options =
     { SchemaFile : string
       OutputFile : Output
       Parameters : GenParams }
 
-[<Literal>]
-let sourcePath = __SOURCE_DIRECTORY__
-
 let parseOptions args =
     let parser = ArgumentParser.Create<CLIArguments>(programName = "Avro")
     let results = parser.Parse(args)
     let parameters = { RecordRepr = results.GetResult(<@ CLIArguments.Record_Repr @>, defaultValue = RecordRepresentation.Record) }
 
-    { SchemaFile = results.GetResult(<@ CLIArguments.Schema_File @>, defaultValue = $"{sourcePath}/../../corpus/simple.avsc")
+    { SchemaFile = results.GetResult(<@ CLIArguments.Schema_File @>)
       OutputFile = results.PostProcessResult(<@ CLIArguments.Output @>, Output.parse)
       Parameters = parameters }
 

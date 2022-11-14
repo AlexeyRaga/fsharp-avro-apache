@@ -5,9 +5,6 @@ open FSharp.Compiler.Syntax
 open FSharp.Avro.Codegen
 open FSharp.Compiler.Xml
 
-let fromAvroIdent = Ident.Create "FromAvroEnumValue"
-let toAvroIdent = Ident.Create "ToAvroEnumValue"
-
 let genSpecificEnum (schema : EnumSchema) =
     let cases = schema.Symbols |> Seq.map Ident.Create |> List.ofSeq
     let decl = SynTypeDefn.CreateEnum(Ident.Create schema.Name, cases, ?xmldoc = Some(PreXmlDoc.Create(schema.Documentation)))
