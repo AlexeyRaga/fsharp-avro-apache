@@ -4,6 +4,21 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <RootNamespace>FSharp.Avro.Codegen</RootNamespace>
+        <Description>F# code generator for Apache.Avro </Description>
+        <Copyright>Alexey Raga</Copyright>
+        <RepositoryUrl>https://github.com/AlexeyRaga/fsharp-avro-apache</RepositoryUrl>
+        <RepositoryType>github</RepositoryType>
+        <Authors>Alexey Raga</Authors>
+        <AssemblyName>fs-avrogen-apache</AssemblyName>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>F# Apache Avro Codegen</Title>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <PackageId>FSharp.Avro.Apache.Tools</PackageId>
+        <PackageTags>F#, fsharp, avro, codegen</PackageTags>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>fs-avrogen-apache</ToolCommandName>
     </PropertyGroup>
 
     <ItemGroup>

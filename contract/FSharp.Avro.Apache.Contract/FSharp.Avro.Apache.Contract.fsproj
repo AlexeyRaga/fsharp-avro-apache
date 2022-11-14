@@ -19,7 +19,7 @@
     <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
         <PropertyGroup>
             <RecordRepresentation>record</RecordRepresentation>
-            <FSharpAvroGen>../../src/FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/FSharp.Avro.Apache.Codegen.dll</FSharpAvroGen>
+            <FSharpAvroGen>../../src/FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/fs-avrogen-apache.dll</FSharpAvroGen>
         </PropertyGroup>
 
         <ItemGroup>
