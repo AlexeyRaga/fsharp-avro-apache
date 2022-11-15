@@ -12,14 +12,16 @@
         <AssemblyName>fs-avrogen-apache</AssemblyName>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>F# Apache Avro Codegen</Title>
-    </PropertyGroup>
-    
-    <PropertyGroup>
         <PackageId>FSharp.Avro.Apache.Tools</PackageId>
         <PackageTags>F#, fsharp, avro, codegen</PackageTags>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>fs-avrogen-apache</ToolCommandName>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\Readme.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
 
     <ItemGroup>
         <Compile Include="Ast\TriviaExtensions.fs" />
