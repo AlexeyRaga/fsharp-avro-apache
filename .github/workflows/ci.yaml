@@ -120,22 +120,17 @@ jobs:
       - name: Publish packages
         run: dotnet nuget push ${{ github.workspace }}/packages/**/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
 
-      - name: "Build Changelog"
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v3
+      - name: Create tag
+        id: create_tag
+        uses: anothrNick/github-tag-action@v1
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          toTag: "{{ github.ref }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: v${{ needs.git-version.outputs.MajorMinorPatch }}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      - name: Create release
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ needs.git-version.outputs.MajorMinorPatch }}
-          body: ${{ steps.build_changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
+          name: Release ${{ needs.git-version.outputs.MajorMinorPatch }}
+          tag: ${{ steps.create_tag.outputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: true
