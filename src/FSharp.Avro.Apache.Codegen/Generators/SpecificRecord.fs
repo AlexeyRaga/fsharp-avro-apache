@@ -266,7 +266,7 @@ module SpecificRecord =
             fields |> Seq.map (fun x -> SynField.Create(x.typ, x.propertyId, xmldoc = PreXmlDoc.Create x.field.Documentation))
 
         let reflectionSetter (target : RecordField) (value : SynExpr) =
-            let setterName = Ident.Prefixed("set_", target.propertyId)
+            let setterName = SynLongIdent.Create [typeName; Ident.Prefixed("set_", target.propertyId) ]
             SynExpr.MethodCall(SynExpr.Create setterName, Ident.Create "Invoke", SynExpr.CreateTuple [ thisExpr; value ])
 
         let specRec = ISpecificRecord.implementInterface thisIdent typeName fields reflectionSetter
@@ -311,7 +311,6 @@ module SpecificRecord =
             SynModuleDecl.CreateNestedModule(
                 SynComponentInfo.Create(
                     id = [ typeName ],
-                    attributes = [ SynAttributeList.Create [ SynAttribute.Create("AutoOpen") ] ],
                     access = SynAccess.Internal(range0)
                 ),
                 mkSetter :: setters

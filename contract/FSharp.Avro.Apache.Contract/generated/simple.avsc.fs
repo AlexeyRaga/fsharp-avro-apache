@@ -39,7 +39,6 @@ type Suit =
     | DIAMONDS = 2
     | CLUBS = 3
 
-[<AutoOpen>]
 module internal Person =
     let mkSetter<'T> (name: string) =
         System.Delegate.CreateDelegate(
@@ -67,8 +66,8 @@ type Person =
         [<CompilerMessage("This method is not intended for use from F#.", 10001, IsError = true, IsHidden = true)>]
         member this.Put(pos: int, value: obj) =
             match pos, value with
-            | 0, (:? string as x) -> set_name.Invoke(this, x)
-            | 1, (:? int as x) -> set_age.Invoke(this, x)
+            | 0, (:? string as x) -> Person.set_name.Invoke(this, x)
+            | 1, (:? int as x) -> Person.set_age.Invoke(this, x)
             | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Put()"))
 
         member this.Schema = Person._SCHEMA
@@ -78,7 +77,6 @@ type Person =
             "{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}"
         )
 
-[<AutoOpen>]
 module internal TestMessage =
     let mkSetter<'T> (name: string) =
         System.Delegate.CreateDelegate(
@@ -172,50 +170,50 @@ type TestMessage =
         [<CompilerMessage("This method is not intended for use from F#.", 10001, IsError = true, IsHidden = true)>]
         member this.Put(pos: int, value: obj) =
             match pos, value with
-            | 0, (:? System.Guid as x) -> set_id.Invoke(this, x)
-            | 1, (:? int as x) -> set_num.Invoke(this, x)
-            | 2, (:? (string seq) as x) -> set_array.Invoke(this, x |> Array.ofSeq)
-            | 3, (:? int as x) -> set_optional_num.Invoke(this, Some(x))
-            | 3, _ -> set_optional_num.Invoke(this, None)
-            | 4, (:? string as x) -> set_str.Invoke(this, x)
-            | 5, (:? string as x) -> set_choice.Invoke(this, (Choice1Of3 x: Choice<string, int, bool>))
-            | 5, (:? int as x) -> set_choice.Invoke(this, (Choice2Of3 x: Choice<string, int, bool>))
-            | 5, (:? bool as x) -> set_choice.Invoke(this, (Choice3Of3 x: Choice<string, int, bool>))
+            | 0, (:? System.Guid as x) -> TestMessage.set_id.Invoke(this, x)
+            | 1, (:? int as x) -> TestMessage.set_num.Invoke(this, x)
+            | 2, (:? (string seq) as x) -> TestMessage.set_array.Invoke(this, x |> Array.ofSeq)
+            | 3, (:? int as x) -> TestMessage.set_optional_num.Invoke(this, Some(x))
+            | 3, _ -> TestMessage.set_optional_num.Invoke(this, None)
+            | 4, (:? string as x) -> TestMessage.set_str.Invoke(this, x)
+            | 5, (:? string as x) -> TestMessage.set_choice.Invoke(this, (Choice1Of3 x: Choice<string, int, bool>))
+            | 5, (:? int as x) -> TestMessage.set_choice.Invoke(this, (Choice2Of3 x: Choice<string, int, bool>))
+            | 5, (:? bool as x) -> TestMessage.set_choice.Invoke(this, (Choice3Of3 x: Choice<string, int, bool>))
             | 6, (:? string as x) ->
-                set_optional_choice
+                TestMessage.set_optional_choice
                     .Invoke(this, (Some(Choice1Of3 x): Choice<string, int, bool> option))
             | 6, (:? int as x) ->
-                set_optional_choice
+                TestMessage.set_optional_choice
                     .Invoke(this, (Some(Choice2Of3 x): Choice<string, int, bool> option))
             | 6, (:? bool as x) ->
-                set_optional_choice
+                TestMessage.set_optional_choice
                     .Invoke(this, (Some(Choice3Of3 x): Choice<string, int, bool> option))
-            | 6, _ -> set_optional_choice.Invoke(this, None)
+            | 6, _ -> TestMessage.set_optional_choice.Invoke(this, None)
             | 7, (:? System.Collections.Generic.IDictionary<string, bool> as x) ->
-                set_map.Invoke(this, Map.ofSeq (Seq.map (|KeyValue|) x))
-            | 8, (:? Test.AvroMsg.MD5 as x) -> set_md5.Invoke(this, x)
-            | 9, (:? Test.AvroMsg.Suit as x) -> set_suit.Invoke(this, x)
-            | 9, (:? int as x) -> set_suit.Invoke(this, (enum x))
+                TestMessage.set_map.Invoke(this, Map.ofSeq (Seq.map (|KeyValue|) x))
+            | 8, (:? Test.AvroMsg.MD5 as x) -> TestMessage.set_md5.Invoke(this, x)
+            | 9, (:? Test.AvroMsg.Suit as x) -> TestMessage.set_suit.Invoke(this, x)
+            | 9, (:? int as x) -> TestMessage.set_suit.Invoke(this, (enum x))
             | 10, (:? string as x) ->
-                set_second_suit
+                TestMessage.set_second_suit
                     .Invoke(this, (Some(Choice1Of2 x): Choice<string, Test.AvroMsg.Suit> option))
             | 10, (:? Test.AvroMsg.Suit as x) ->
-                set_second_suit
+                TestMessage.set_second_suit
                     .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Suit> option))
             | 10, (:? int as x) ->
-                set_second_suit
+                TestMessage.set_second_suit
                     .Invoke(this, (Some(Choice2Of2(enum x)): Choice<string, Test.AvroMsg.Suit> option))
-            | 10, _ -> set_second_suit.Invoke(this, None)
-            | 11, (:? Test.AvroMsg.Person as x) -> set_owner.Invoke(this, x)
-            | 12, (:? Test.AvroMsg.Person as x) -> set_contact.Invoke(this, Some(x))
-            | 12, _ -> set_contact.Invoke(this, None)
+            | 10, _ -> TestMessage.set_second_suit.Invoke(this, None)
+            | 11, (:? Test.AvroMsg.Person as x) -> TestMessage.set_owner.Invoke(this, x)
+            | 12, (:? Test.AvroMsg.Person as x) -> TestMessage.set_contact.Invoke(this, Some(x))
+            | 12, _ -> TestMessage.set_contact.Invoke(this, None)
             | 13, (:? string as x) ->
-                set_supervisor
+                TestMessage.set_supervisor
                     .Invoke(this, (Some(Choice1Of2 x): Choice<string, Test.AvroMsg.Person> option))
             | 13, (:? Test.AvroMsg.Person as x) ->
-                set_supervisor
+                TestMessage.set_supervisor
                     .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Person> option))
-            | 13, _ -> set_supervisor.Invoke(this, None)
+            | 13, _ -> TestMessage.set_supervisor.Invoke(this, None)
             | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Put()"))
 
         member this.Schema = TestMessage._SCHEMA
