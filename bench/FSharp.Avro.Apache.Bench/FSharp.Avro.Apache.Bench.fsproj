@@ -34,5 +34,6 @@
     <ItemGroup>
       <ProjectReference Include="..\..\contract\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj" />
       <ProjectReference Include="..\..\contract\FSharp.Avro.Apache.Contract\FSharp.Avro.Apache.Contract.fsproj" />
+      <ProjectReference Include="..\..\src\FSharp.Avro.Apache.Codegen\FSharp.Avro.Apache.Codegen.fsproj" />
     </ItemGroup>
 </Project>
