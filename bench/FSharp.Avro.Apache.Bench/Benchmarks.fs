@@ -13,9 +13,9 @@ type Benchmarks () =
     let CSMessage = Activator.CreateInstance<CSharp.AvroMsg.TestMessage>()
 
 
-    let fsMd5 = Test.AvroMsg.MD5.Create(Array.replicate 16 77uy) |> Result.either id failwith
-    let FSPerson = Activator.CreateInstance<Test.AvroMsg.Person>()
-    let FSMessage = Activator.CreateInstance<Test.AvroMsg.TestMessage>()
+    let fsMd5 = FSharp.AvroMsg.MD5.Create(Array.replicate 16 77uy) |> Result.either id failwith
+    let FSPerson = Activator.CreateInstance<FSharp.AvroMsg.Person>()
+    let FSMessage = Activator.CreateInstance<FSharp.AvroMsg.TestMessage>()
 
     member private this.FillInMessage md5 (person : ISpecificRecord) (message : ISpecificRecord) =
         person.Put(0, this.stringValue)

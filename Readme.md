@@ -1,5 +1,7 @@
 # F# Bindings for Apache Avro
 
+NuGet Package: [FSharp.Avro.Apache.Tools](https://www.nuget.org/packages/FSharp.Avro.Apache.Tools)
+
 This package provides a tool that generates F# types
 wrapping [Apache Avro](https://www.nuget.org/packages/Apache.Avro) serialisation mechanics.
 
@@ -11,7 +13,11 @@ OPTIONS:
     --schema-file <file>  Path to .avsc file
     --output <file>       Output location
     --record-repr <repr>  Record representation, 'class' or 'record'
+    --namespace <string>  Map an Avro schema namespace to a .NET namespace.
+                          The format is "my.avro.namespace:my.csharp.namespace"
+                          May be specified multiple times to map multiple namespaces.
     --help                display this list of options.
+
 ```
 
 ## Motivation

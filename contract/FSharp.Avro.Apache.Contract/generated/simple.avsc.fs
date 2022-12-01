@@ -1,4 +1,4 @@
-namespace rec Test.AvroMsg
+namespace rec FSharp.AvroMsg
 
 ///MD5 Hash sum
 type MD5 private (value: byte[]) =
@@ -16,7 +16,7 @@ type MD5 private (value: byte[]) =
 
         static member _SCHEMA =
             Avro.Schema.Parse(
-                "{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"Test.AvroMsg\",\"size\":16}"
+                "{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"FSharp.AvroMsg\",\"size\":16}"
             )
 
         ///Creates an instance of MD5.
@@ -24,7 +24,7 @@ type MD5 private (value: byte[]) =
         static member Create(value) =
             match Array.length (value) with
             | 16 -> Ok(MD5 value)
-            | _ -> Error "Fixed size value Test.AvroMsg.MD5 is required have length 16"
+            | _ -> Error "Fixed size value FSharp.AvroMsg.MD5 is required have length 16"
     end
 
 [<AutoOpen>]
@@ -42,10 +42,10 @@ type Suit =
 module internal Person =
     let mkSetter<'T> (name: string) =
         System.Delegate.CreateDelegate(
-            typeof<System.Action<Test.AvroMsg.Person, 'T>>,
-            typeof<Test.AvroMsg.Person>.GetProperty(name).GetSetMethod()
+            typeof<System.Action<FSharp.AvroMsg.Person, 'T>>,
+            typeof<FSharp.AvroMsg.Person>.GetProperty(name).GetSetMethod()
         )
-        :?> System.Action<Test.AvroMsg.Person, 'T>
+        :?> System.Action<FSharp.AvroMsg.Person, 'T>
 
     let set_name = mkSetter<string> "name"
     let set_age = mkSetter<int> "age"
@@ -74,16 +74,16 @@ type Person =
 
     static member _SCHEMA =
         Avro.Schema.Parse(
-            "{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}"
+            "{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"FSharp.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}"
         )
 
 module internal TestMessage =
     let mkSetter<'T> (name: string) =
         System.Delegate.CreateDelegate(
-            typeof<System.Action<Test.AvroMsg.TestMessage, 'T>>,
-            typeof<Test.AvroMsg.TestMessage>.GetProperty(name).GetSetMethod()
+            typeof<System.Action<FSharp.AvroMsg.TestMessage, 'T>>,
+            typeof<FSharp.AvroMsg.TestMessage>.GetProperty(name).GetSetMethod()
         )
-        :?> System.Action<Test.AvroMsg.TestMessage, 'T>
+        :?> System.Action<FSharp.AvroMsg.TestMessage, 'T>
 
     let set_id = mkSetter<System.Guid> "id"
     let set_num = mkSetter<int> "num"
@@ -96,17 +96,17 @@ module internal TestMessage =
         mkSetter<Choice<string, int, bool> option> "optional_choice"
 
     let set_map = mkSetter<Map<string, bool>> "map"
-    let set_md5 = mkSetter<Test.AvroMsg.MD5> "md5"
-    let set_suit = mkSetter<Test.AvroMsg.Suit> "suit"
+    let set_md5 = mkSetter<FSharp.AvroMsg.MD5> "md5"
+    let set_suit = mkSetter<FSharp.AvroMsg.Suit> "suit"
 
     let set_second_suit =
-        mkSetter<Choice<string, Test.AvroMsg.Suit> option> "second_suit"
+        mkSetter<Choice<string, FSharp.AvroMsg.Suit> option> "second_suit"
 
-    let set_owner = mkSetter<Test.AvroMsg.Person> "owner"
-    let set_contact = mkSetter<Test.AvroMsg.Person option> "contact"
+    let set_owner = mkSetter<FSharp.AvroMsg.Person> "owner"
+    let set_contact = mkSetter<FSharp.AvroMsg.Person option> "contact"
 
     let set_supervisor =
-        mkSetter<Choice<string, Test.AvroMsg.Person> option> "supervisor"
+        mkSetter<Choice<string, FSharp.AvroMsg.Person> option> "supervisor"
 
 [<CLIMutable>]
 type TestMessage =
@@ -119,13 +119,13 @@ type TestMessage =
         choice: Choice<string, int, bool>
         optional_choice: Choice<string, int, bool> option
         map: Map<string, bool>
-        md5: Test.AvroMsg.MD5
-        suit: Test.AvroMsg.Suit
-        second_suit: Choice<string, Test.AvroMsg.Suit> option
+        md5: FSharp.AvroMsg.MD5
+        suit: FSharp.AvroMsg.Suit
+        second_suit: Choice<string, FSharp.AvroMsg.Suit> option
         ///Who owns this thing anyway?!
-        owner: Test.AvroMsg.Person
-        contact: Test.AvroMsg.Person option
-        supervisor: Choice<string, Test.AvroMsg.Person> option
+        owner: FSharp.AvroMsg.Person
+        contact: FSharp.AvroMsg.Person option
+        supervisor: Choice<string, FSharp.AvroMsg.Person> option
     }
 
     interface Avro.Specific.ISpecificRecord with
@@ -191,28 +191,28 @@ type TestMessage =
             | 6, _ -> TestMessage.set_optional_choice.Invoke(this, None)
             | 7, (:? System.Collections.Generic.IDictionary<string, bool> as x) ->
                 TestMessage.set_map.Invoke(this, Map.ofSeq (Seq.map (|KeyValue|) x))
-            | 8, (:? Test.AvroMsg.MD5 as x) -> TestMessage.set_md5.Invoke(this, x)
-            | 9, (:? Test.AvroMsg.Suit as x) -> TestMessage.set_suit.Invoke(this, x)
+            | 8, (:? FSharp.AvroMsg.MD5 as x) -> TestMessage.set_md5.Invoke(this, x)
+            | 9, (:? FSharp.AvroMsg.Suit as x) -> TestMessage.set_suit.Invoke(this, x)
             | 9, (:? int as x) -> TestMessage.set_suit.Invoke(this, (enum x))
             | 10, (:? string as x) ->
                 TestMessage.set_second_suit
-                    .Invoke(this, (Some(Choice1Of2 x): Choice<string, Test.AvroMsg.Suit> option))
-            | 10, (:? Test.AvroMsg.Suit as x) ->
+                    .Invoke(this, (Some(Choice1Of2 x): Choice<string, FSharp.AvroMsg.Suit> option))
+            | 10, (:? FSharp.AvroMsg.Suit as x) ->
                 TestMessage.set_second_suit
-                    .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Suit> option))
+                    .Invoke(this, (Some(Choice2Of2 x): Choice<string, FSharp.AvroMsg.Suit> option))
             | 10, (:? int as x) ->
                 TestMessage.set_second_suit
-                    .Invoke(this, (Some(Choice2Of2(enum x)): Choice<string, Test.AvroMsg.Suit> option))
+                    .Invoke(this, (Some(Choice2Of2(enum x)): Choice<string, FSharp.AvroMsg.Suit> option))
             | 10, _ -> TestMessage.set_second_suit.Invoke(this, None)
-            | 11, (:? Test.AvroMsg.Person as x) -> TestMessage.set_owner.Invoke(this, x)
-            | 12, (:? Test.AvroMsg.Person as x) -> TestMessage.set_contact.Invoke(this, Some(x))
+            | 11, (:? FSharp.AvroMsg.Person as x) -> TestMessage.set_owner.Invoke(this, x)
+            | 12, (:? FSharp.AvroMsg.Person as x) -> TestMessage.set_contact.Invoke(this, Some(x))
             | 12, _ -> TestMessage.set_contact.Invoke(this, None)
             | 13, (:? string as x) ->
                 TestMessage.set_supervisor
-                    .Invoke(this, (Some(Choice1Of2 x): Choice<string, Test.AvroMsg.Person> option))
-            | 13, (:? Test.AvroMsg.Person as x) ->
+                    .Invoke(this, (Some(Choice1Of2 x): Choice<string, FSharp.AvroMsg.Person> option))
+            | 13, (:? FSharp.AvroMsg.Person as x) ->
                 TestMessage.set_supervisor
-                    .Invoke(this, (Some(Choice2Of2 x): Choice<string, Test.AvroMsg.Person> option))
+                    .Invoke(this, (Some(Choice2Of2 x): Choice<string, FSharp.AvroMsg.Person> option))
             | 13, _ -> TestMessage.set_supervisor.Invoke(this, None)
             | _ -> raise (Avro.AvroRuntimeException("Bad index " + string pos + " in Put()"))
 
@@ -220,5 +220,5 @@ type TestMessage =
 
     static member _SCHEMA =
         Avro.Schema.Parse(
-            "{\"type\":\"record\",\"name\":\"TestMessage\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"id\",\"type\":{\"type\":\"string\",\"logicalType\":\"uuid\"}},{\"name\":\"num\",\"type\":\"int\"},{\"name\":\"array\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"optional_num\",\"type\":[\"null\",\"int\"]},{\"name\":\"str\",\"type\":\"string\"},{\"name\":\"choice\",\"type\":[\"string\",\"int\",\"boolean\"]},{\"name\":\"optional_choice\",\"type\":[\"null\",\"string\",\"int\",\"boolean\"]},{\"name\":\"map\",\"type\":{\"type\":\"map\",\"values\":\"boolean\"}},{\"name\":\"md5\",\"type\":{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"Test.AvroMsg\",\"size\":16}},{\"name\":\"suit\",\"type\":{\"type\":\"enum\",\"name\":\"Suit\",\"doc\":\"Your usual card deck suit\",\"namespace\":\"Test.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}},{\"name\":\"second_suit\",\"type\":[\"null\",\"string\",\"Suit\"]},{\"name\":\"owner\",\"doc\":\"Who owns this thing anyway?!\",\"type\":{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"Test.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}},{\"name\":\"contact\",\"type\":[\"null\",\"Person\"]},{\"name\":\"supervisor\",\"type\":[\"null\",\"string\",\"Person\"]}]}"
+            "{\"type\":\"record\",\"name\":\"TestMessage\",\"namespace\":\"FSharp.AvroMsg\",\"aliases\":[\"Test.AvroMsg.TestMessage\"],\"fields\":[{\"name\":\"id\",\"type\":{\"type\":\"string\",\"logicalType\":\"uuid\"}},{\"name\":\"num\",\"type\":\"int\"},{\"name\":\"array\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"optional_num\",\"type\":[\"null\",\"int\"]},{\"name\":\"str\",\"type\":\"string\"},{\"name\":\"choice\",\"type\":[\"string\",\"int\",\"boolean\"]},{\"name\":\"optional_choice\",\"type\":[\"null\",\"string\",\"int\",\"boolean\"]},{\"name\":\"map\",\"type\":{\"type\":\"map\",\"values\":\"boolean\"}},{\"name\":\"md5\",\"type\":{\"type\":\"fixed\",\"name\":\"MD5\",\"doc\":\"MD5 Hash sum\",\"namespace\":\"FSharp.AvroMsg\",\"size\":16}},{\"name\":\"suit\",\"type\":{\"type\":\"enum\",\"name\":\"Suit\",\"doc\":\"Your usual card deck suit\",\"namespace\":\"FSharp.AvroMsg\",\"symbols\":[\"SPADES\",\"HEARTS\",\"DIAMONDS\",\"CLUBS\"]}},{\"name\":\"second_suit\",\"type\":[\"null\",\"string\",\"Suit\"]},{\"name\":\"owner\",\"doc\":\"Who owns this thing anyway?!\",\"type\":{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"FSharp.AvroMsg\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"age\",\"type\":\"int\"}]}},{\"name\":\"contact\",\"type\":[\"null\",\"Person\"]},{\"name\":\"supervisor\",\"type\":[\"null\",\"string\",\"Person\"]}]}"
         )

@@ -2,7 +2,7 @@ module FSharp.Avro.Tests.SimpleTests
 
 open System.Collections.Generic
 open Microsoft.FSharp.Reflection
-open Test.AvroMsg
+open FSharp.AvroMsg
 open FsToolkit.ErrorHandling
 open Hedgehog
 open Hedgehog.Xunit
@@ -38,10 +38,10 @@ let unwrapUnion value =
     | _, [| x |] -> x
     | _ -> failwith "Expected union type that has one value"
 
-let toCsPerson (msg : Test.AvroMsg.Person) =
+let toCsPerson (msg : Person) =
     CSharp.AvroMsg.Person(name = msg.name, age = msg.age)
 
-let toCsMessage (msg : Test.AvroMsg.TestMessage) =
+let toCsMessage (msg : TestMessage) =
     let md5 = CSharp.AvroMsg.MD5()
     md5.Value <- msg.md5.Value
 
@@ -59,20 +59,20 @@ let toCsMessage (msg : Test.AvroMsg.TestMessage) =
         second_suit =
             (match msg.second_suit with
              | None -> null
-             | Some (Choice1Of2 str) -> box str
-             | Some (Choice2Of2 suit) -> box (enum<CSharp.AvroMsg.Suit> (int suit))),
+             | Some(Choice1Of2 str) -> box str
+             | Some(Choice2Of2 suit) -> box (enum<CSharp.AvroMsg.Suit> (int suit))),
         owner = toCsPerson msg.owner,
         contact = (msg.contact |> Option.map toCsPerson |> Option.toObj),
         supervisor =
             match msg.supervisor with
             | None -> null
-            | Some (Choice1Of2 str) -> box str
-            | Some (Choice2Of2 sup) -> box sup
+            | Some(Choice1Of2 str) -> box str
+            | Some(Choice2Of2 sup) -> box (toCsPerson sup)
     )
 
 type Generators =
     static member __ =
-        let genStringArray = GenX.auto<string []> |> Gen.map (fun x -> x :> IList<string>)
+        let genStringArray = GenX.auto<string[]> |> Gen.map (fun x -> x :> IList<string>)
         let genBoolMap = GenX.auto<Dictionary<string, bool>> |> Gen.map (fun x -> x :> IDictionary<string, bool>)
 
         GenX.defaults
@@ -82,12 +82,10 @@ type Generators =
         |> AutoGenConfig.addGenerator genBoolMap
 
 [<Property(typeof<Generators>)>]
-let ``Should roundtrip FSharp message`` (msg : Test.AvroMsg.TestMessage) =
+let ``Should roundtrip FSharp message`` (msg : TestMessage) =
     let decoded = msg |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA
     decoded = msg
 
 [<Property(typeof<Generators>)>]
-let ``Should decode CSharp message`` (msg : Test.AvroMsg.TestMessage) =
-    let csMsg = toCsMessage msg
-    let decoded = msg |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA
-    decoded = msg
+let ``Should decode CSharp message`` (msg : TestMessage) =
+    msg |> toCsMessage |> AvroCodec.encode |> AvroCodec.decode<TestMessage> TestMessage._SCHEMA === msg

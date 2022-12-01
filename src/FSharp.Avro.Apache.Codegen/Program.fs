@@ -23,12 +23,17 @@ type CLIArguments =
     | [<Unique>] Schema_File of file : string
     | [<Unique>] Output of file : string
     | [<Unique>] Record_Repr of repr : RecordRepresentation
+    | Namespace of string
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Schema_File _ -> "Path to .avsc file"
             | Output _ -> "Output location"
             | Record_Repr _ -> "Record representation, 'class' or 'record'"
+            | Namespace _ ->
+                """Map an Avro schema namespace to a .NET namespace.
+The format is "my.avro.namespace:my.csharp.namespace"
+May be specified multiple times to map multiple namespaces."""
 
 type Options =
     { SchemaFile : string
@@ -38,7 +43,15 @@ type Options =
 let parseOptions args =
     let parser = ArgumentParser.Create<CLIArguments>(programName = "Avro")
     let results = parser.Parse(args)
-    let parameters = { RecordRepr = results.GetResult(<@ CLIArguments.Record_Repr @>, defaultValue = RecordRepresentation.Record) }
+
+    let parseNamespace (mapping : string) =
+        match mapping.Split(':') with
+        | [| k; v |] -> Some(k, v)
+        | _ -> None
+
+    let parameters =
+        { RecordRepr = results.GetResult(<@ CLIArguments.Record_Repr @>, defaultValue = RecordRepresentation.Record)
+          NamespaceMapping = results.PostProcessResults(<@ CLIArguments.Namespace @>, parseNamespace) |> Seq.choose id |> Map.ofSeq }
 
     { SchemaFile = results.GetResult(<@ CLIArguments.Schema_File @>)
       OutputFile = results.PostProcessResult(<@ CLIArguments.Output @>, Output.parse)

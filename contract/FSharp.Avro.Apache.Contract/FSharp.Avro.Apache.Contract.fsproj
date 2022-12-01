@@ -29,7 +29,7 @@
         <MakeDir Directories="$(ProjectDir)/generated/"/>
         <Delete Files="generated/*"/>
 
-        <Exec Command="dotnet $(FSharpAvroGen) --record-repr $(RecordRepresentation) --schema-file &quot;%(AvroSchemas.Identity)&quot; --output &quot;$(ProjectDir)generated/$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs&quot;" WorkingDirectory="$(ProjectDir)"/>
+        <Exec Command="dotnet $(FSharpAvroGen) --namespace 'Test.AvroMsg:FSharp.AvroMsg' --record-repr $(RecordRepresentation) --schema-file &quot;%(AvroSchemas.Identity)&quot; --output &quot;$(ProjectDir)generated/$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs&quot;" WorkingDirectory="$(ProjectDir)"/>
     </Target>
 
     <ItemGroup>

@@ -9,6 +9,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Prelude.fs" />
+        <Compile Include="ArgsTests.fs" />
+        <Compile Include="SchemaTests.fs" />
         <Compile Include="Playground.fs" />
         <Compile Include="AvroCodec.fs" />
         <Compile Include="SimpleTests.fs" />
@@ -20,6 +23,7 @@
         <PackageReference Include="Fantomas.Core" Version="5.1.2" />
         <PackageReference Include="Fantomas.FCS" Version="5.1.2" />
         <PackageReference Include="FsToolkit.ErrorHandling" Version="3.2.0" />
+        <PackageReference Include="FsUnit.xUnit" Version="5.1.0" />
         <PackageReference Include="Hedgehog" Version="0.13.0" />
         <PackageReference Include="Hedgehog.Experimental" Version="0.7.0" />
         <PackageReference Include="Hedgehog.Xunit" Version="0.5.1" />
@@ -45,6 +49,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\contract\CSharp.Avro.Apache.Contract\CSharp.Avro.Apache.Contract.csproj" />
       <ProjectReference Include="..\..\contract\FSharp.Avro.Apache.Contract\FSharp.Avro.Apache.Contract.fsproj" />
+      <ProjectReference Include="..\..\src\FSharp.Avro.Apache.Codegen\FSharp.Avro.Apache.Codegen.fsproj" />
     </ItemGroup>
 
 

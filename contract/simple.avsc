@@ -2,6 +2,7 @@
   "type": "record",
   "namespace": "Test.AvroMsg",
   "name": "TestMessage",
+  "aliases": ["Test.AvroMsg.TestMessage"],
   "fields": [
     { "name": "id", "type": { "type": "string", "logicalType": "uuid" } },
     { "name": "num",  "type": "int" },
