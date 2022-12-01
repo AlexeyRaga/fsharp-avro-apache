@@ -60,6 +60,8 @@ let parseOptions args =
 [<EntryPoint>]
 let main args =
     let options = parseOptions args
+    printfn $"Generate: {options.SchemaFile} -> {options.OutputFile}"
     let res = AvroGenerator.generateForFile options.Parameters options.SchemaFile |> Async.RunSynchronously
     options.OutputFile |> Output.write res
+    printfn $"Done generating: {options.OutputFile}"
     0

@@ -12,28 +12,44 @@
         </Content>
     </ItemGroup>
 
+    <PropertyGroup>
+        <CompileDependsOn>
+            GenerateAvroFSharp;
+            IncludeFSharpTargets;
+            $(CompileDependsOn)
+        </CompileDependsOn>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Apache.Avro" Version="1.11.1"/>
+        <PackageReference Include="Apache.Avro" Version="1.11.1" />
     </ItemGroup>
 
-    <Target Name="GenerateAvro" BeforeTargets="PrepareForBuild">
+    <Target Name="IncludeFSharpTargets" DependsOnTargets="GenerateAvroFSharp" BeforeTargets="BeforeBuild;Build;BuildCompile;BuildGenerateSources">
+        <ItemGroup>
+            <Compile Include="generated\*.fs" />
+        </ItemGroup>
+        <Message Text="Inlcuded: %(Compile.FullPath)" />
+    </Target>
+
+    <Target Name="GenerateAvroFSharp" BeforeTargets="BeforeBuild;Build;BuildCompile;BuildGenerateSources">
         <PropertyGroup>
             <RecordRepresentation>record</RecordRepresentation>
             <FSharpAvroGen>../../src/FSharp.Avro.Apache.Codegen/bin/$(Configuration)/$(TargetFramework)/fs-avrogen-apache.dll</FSharpAvroGen>
         </PropertyGroup>
 
         <ItemGroup>
-            <AvroSchemas Include="$(SolutionDir)/contract/*.avsc"/>
+            <AvroSchemas Include="$(SolutionDir)\contract\*.avsc" />
         </ItemGroup>
 
-        <MakeDir Directories="$(ProjectDir)/generated/"/>
-        <Delete Files="generated/*"/>
+        <CombinePath BasePath="$(ProjectDir)" Paths="generated\">
+            <Output TaskParameter="CombinedPaths" ItemName="GeneratedCodeDirectory" />
+        </CombinePath>
 
-        <Exec Command="dotnet $(FSharpAvroGen) --namespace 'Test.AvroMsg:FSharp.AvroMsg' --record-repr $(RecordRepresentation) --schema-file &quot;%(AvroSchemas.Identity)&quot; --output &quot;$(ProjectDir)generated/$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs&quot;" WorkingDirectory="$(ProjectDir)"/>
+        <RemoveDir Directories="@(GeneratedCodeDirectory)" />
+        <MakeDir Directories="@(GeneratedCodeDirectory)" />
+
+        <Exec Command='dotnet $(FSharpAvroGen) --namespace "Test.AvroMsg:FSharp.AvroMsg" --record-repr $(RecordRepresentation) --schema-file "%(AvroSchemas.Identity)" --output "@(GeneratedCodeDirectory)$([System.IO.Path]::GetFileName(%(AvroSchemas.Identity))).fs"' WorkingDirectory="$(ProjectDir)" />
+
     </Target>
-
-    <ItemGroup>
-        <Compile Include="generated/*.fs" />
-    </ItemGroup>
 
 </Project>

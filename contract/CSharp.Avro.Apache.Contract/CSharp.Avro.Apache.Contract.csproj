@@ -22,10 +22,14 @@
       <AvroSchemas Include="$(SolutionDir)/contract/*.avsc" />
     </ItemGroup>
 
-    <MakeDir Directories="$(ProjectDir)/generated/" />
-    <Delete Files="generated/*" />
+    <CombinePath BasePath="$(ProjectDir)" Paths="generated">
+      <Output TaskParameter="CombinedPaths" ItemName="GeneratedCodeDirectory" />
+    </CombinePath>
 
-    <Exec Command="dotnet avrogen -s &quot;%(AvroSchemas.Identity)&quot; &quot;$(ProjectDir)generated/&quot; --namespace Test.AvroMsg:CSharp.AvroMsg" WorkingDirectory="$(ProjectDir)" />
+    <RemoveDir Directories="@(GeneratedCodeDirectory)" />
+    <MakeDir Directories="@(GeneratedCodeDirectory)" />
+
+    <Exec Command='dotnet avrogen -s "%(AvroSchemas.Identity)" "@(GeneratedCodeDirectory)" --namespace Test.AvroMsg:CSharp.AvroMsg' WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 
