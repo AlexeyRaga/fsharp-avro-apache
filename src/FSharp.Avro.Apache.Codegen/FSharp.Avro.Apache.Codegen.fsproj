@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\..\Readme.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\Readme.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -44,6 +44,7 @@
         <Compile Include="Ast\SynModuleDecl.fs" />
         <Compile Include="Ast\PreXmlDoc.fs" />
         <Compile Include="Prelude.fs" />
+        <Compile Include="GenParams.fs" />
         <Compile Include="Schema.fs" />
         <Compile Include="AstExtensions.fs" />
         <Compile Include="Generators\Namespaced.fs" />

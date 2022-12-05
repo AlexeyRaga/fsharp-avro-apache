@@ -7,7 +7,7 @@ open FSharp.Compiler.Text.Range
 open FSharp.Avro.Codegen
 open FSharp.Compiler.Xml
 
-let genSpecificFixed (schema : FixedSchema) =
+let genSpecificFixed (parameters : GenParams) (schema : FixedSchema) =
     let typeName = Ident.Create schema.Name
     let valuePropIdent = Ident.Create "Value"
 
@@ -97,5 +97,5 @@ let genSpecificFixed (schema : FixedSchema) =
             [ activePattern ]
         )
 
-    { Namespace = schema.Namespace
+    { Namespace = parameters |> GenParams.mappedNamespace schema.Namespace
       Declarations = [ typeDecl; companionModule ] }

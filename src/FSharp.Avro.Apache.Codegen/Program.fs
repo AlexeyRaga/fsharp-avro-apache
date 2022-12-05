@@ -51,7 +51,11 @@ let parseOptions args =
 
     let parameters =
         { RecordRepr = results.GetResult(<@ CLIArguments.Record_Repr @>, defaultValue = RecordRepresentation.Record)
-          NamespaceMapping = results.PostProcessResults(<@ CLIArguments.Namespace @>, parseNamespace) |> Seq.choose id |> Map.ofSeq }
+          NamespaceMapping =
+            results.PostProcessResults(<@ CLIArguments.Namespace @>, parseNamespace)
+            |> Seq.choose id
+            |> Seq.sortByDescending (fst >> String.length)
+            |> List.ofSeq }
 
     { SchemaFile = results.GetResult(<@ CLIArguments.Schema_File @>)
       OutputFile = results.PostProcessResult(<@ CLIArguments.Output @>, Output.parse)
