@@ -56,10 +56,6 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet }}
 
-      - name: Make
-        run: make
-
-
       - name: Install dependencies
         run: dotnet tool restore && dotnet restore
 
@@ -100,7 +96,6 @@ jobs:
           retention-days: 5
           name: packages-${{ matrix.os }}-net${{ matrix.dotnet }}
           path: ${{ github.workspace }}/packages/**/*.nupkg
-
 
 
   release:
