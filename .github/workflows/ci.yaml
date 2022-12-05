@@ -56,6 +56,10 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet }}
 
+      - name: Make
+        run: make
+
+
       - name: Install dependencies
         run: dotnet tool restore && dotnet restore
 
@@ -70,7 +74,7 @@ jobs:
 
       - name: Build everything else
         run: |
-          dotnet build --no-restore \
+          dotnet build --no-restore -v n \
           -c ${{ env.CONFIGURATION }} \
           -p:AssemblyVersion=${{ needs.git-version.outputs.MajorMinorPatch }} \
           -p:PackageVersion=${{ needs.git-version.outputs.NuGetVersionV2 }} \
