@@ -13,22 +13,22 @@ let baseArgs =
 [<Fact>]
 let ``Should not fail when namespace mapping is not provided``() =
     let opts = Program.parseOptions baseArgs
-    opts.Parameters.NamespaceMapping === Map.empty
+    opts.Parameters.NamespaceMapping === []
 
 [<Fact>]
 let ``Should parse namespace mapping``() =
     let args = baseArgs |> Array.append [| "--namespace"; "foo:bar" |]
     let opts = Program.parseOptions args
-    opts.Parameters.NamespaceMapping === Map.ofSeq ["foo", "bar"]
+    opts.Parameters.NamespaceMapping === ["foo", "bar"]
 
 [<Fact>]
 let ``Should parse multiple namespace mappings``() =
     let args = baseArgs |> Array.append [| "--namespace"; "foo:bar"; "--namespace"; "boo:buzz" |]
     let opts = Program.parseOptions args
-    opts.Parameters.NamespaceMapping === Map.ofSeq ["foo", "bar"; "boo", "buzz"]
+    opts.Parameters.NamespaceMapping === ["foo", "bar"; "boo", "buzz"]
 
 [<Fact>]
 let ``Should ignore wrong mappings``() =
     let args = baseArgs |> Array.append [| "--namespace"; "foo"; "--namespace"; "bar:buzz:goo" |]
     let opts = Program.parseOptions args
-    opts.Parameters.NamespaceMapping === Map.empty
+    opts.Parameters.NamespaceMapping === []

@@ -61,23 +61,23 @@ let rec primSchemaType (schema : PrimitiveSchema) =
     | Schema.Type.Bytes -> SynType.CreateArray SynType.Byte
     | _ -> failwith "Unexpected primitive type"
 
-let rec schemaType (schema : Schema) =
+let rec schemaType (parameters : GenParams) (schema : Schema) =
     match schema with
     | :? PrimitiveSchema as s -> primSchemaType s
-    | :? NamedSchema as s -> SynType.Create(s.Fullname)
-    | :? ArraySchema as s -> SynType.CreateArray(schemaType s.ItemSchema)
-    | :? MapSchema as s -> SynType.Map(SynType.String, schemaType s.ValueSchema)
-    | :? UnionSchema as s -> unionSchemaType s
+    | :? NamedSchema as s -> SynType.Create(GenParams.fullTypeName s.SchemaName parameters)
+    | :? ArraySchema as s -> SynType.CreateArray(schemaType parameters s.ItemSchema)
+    | :? MapSchema as s -> SynType.Map(SynType.String, schemaType parameters s.ValueSchema)
+    | :? UnionSchema as s -> unionSchemaType parameters s
     | :? LogicalSchema as s -> SynType.Create(s.LogicalType.GetCSharpType(false).FullName)
     | _ -> failwith $"Unexpected schema: {schema.Fullname} of type {schema.GetType().FullName}"
 
-and unionSchemaType (schema : UnionSchema) =
+and unionSchemaType (parameters : GenParams) (schema : UnionSchema) =
     let buildChoice xs =
-        xs |> List.map (snd >> schemaType) |> SynType.Choice
+        xs |> List.map (snd >> schemaType parameters) |> SynType.Choice
 
     match schema with
     | UnionEmpty -> SynType.Unit
-    | UnionSingleOptional (_, x) -> SynType.Option(schemaType x, true)
+    | UnionSingleOptional (_, x) -> SynType.Option(schemaType parameters x, true)
     | UnionOptionalCases xs -> SynType.Option(buildChoice xs, true)
     | UnionCases xs -> buildChoice xs
-    | UnionSingle (_, x) -> schemaType x
+    | UnionSingle (_, x) -> schemaType parameters x
